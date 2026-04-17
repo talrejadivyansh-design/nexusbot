@@ -17,15 +17,27 @@ export default async function handler(req, res) {
 
   const { messages, model } = req.body;
 
-  // Check if message needs real time search
-  const lastMessage = messages[messages.length - 1].content.toLowerCase();
-  const needsSearch = ['news', 'latest', 'today', 'current', 'recent', 'score',
-    'match', 'ipl', 'cricket', 'sports', 'weather', 'price', '2024', '2025', '2026',
-    'अभी', 'आज', 'ताजा', 'खबर', 'समाचार'].some(word => lastMessage.includes(word));
+// Check if message needs real time search
+const lastMessage = messages[messages.length - 1].content.toLowerCase();
+const needsCricket = ['cricket', 'ipl', 'score', 'match', 'wicket', 'run', 'batting', 'bowling', 'mi', 'csk', 'rcb', 'kkr', 'srh', 'dc', 'pbks', 'rr', 'lsg', 'gt'].some(w => lastMessage.includes(w));
+const needsSearch = ['news', 'latest', 'today', 'current', 'recent', 'weather', 'price', '2026', 'अभी', 'आज', 'ताजा', 'खबर'].some(word => lastMessage.includes(word));
 
   let searchContext = '';
 
-  if (needsSearch && process.env.TAVILY_API_KEY) {
+  if (needsCricket && process.env.CRIC_API_KEY) {
+  try {
+    const cricRes = await fetch(`https://api.cricapi.com/v1/cricScore?apikey=${process.env.CRIC_API_KEY}`);
+    const cricData = await cricRes.json();
+    if (cricData.data) {
+      const relevantMatches = cricData.data.slice(0, 5);
+      searchContext = '\n\nLIVE CRICKET SCORES:\n' +
+        relevantMatches.map(m => `${m.t1} vs ${m.t2}: ${m.t1s || 'Yet to bat'} vs ${m.t2s || 'Yet to bat'} - ${m.status}`).join('\n') +
+        '\n\nUse ONLY above live scores. Do not use training data for scores.';
+    }
+  } catch(e) { console.log('Cricket API failed:', e.message); }
+}
+
+if (!searchContext && needsSearch && process.env.TAVILY_API_KEY) {
     try {
       const searchRes = await fetch('https://api.tavily.com/search', {
         method: 'POST',
