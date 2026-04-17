@@ -32,12 +32,12 @@ const needsSearch = ['news', 'latest', 'today', 'current', 'recent', 'weather', 
       const relevantMatches = cricData.data.slice(0, 5);
       searchContext = '\n\nLIVE CRICKET SCORES:\n' +
         relevantMatches.map(m => `${m.t1} vs ${m.t2}: ${m.t1s || 'Yet to bat'} vs ${m.t2s || 'Yet to bat'} - ${m.status}`).join('\n') +
-        '\n\nUse ONLY above live scores. Do not use training data for scores.';
+        '\n\nThese are todays LIVE matches. For past match results use your search capability.';
     }
   } catch(e) { console.log('Cricket API failed:', e.message); }
 }
 
-if (!searchContext && needsSearch && process.env.TAVILY_API_KEY) {
+if (process.env.TAVILY_API_KEY) {
     try {
       const searchRes = await fetch('https://api.tavily.com/search', {
         method: 'POST',
