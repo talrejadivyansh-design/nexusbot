@@ -101,16 +101,130 @@
     <div class="xptrack"><div class="xpfill" id="xpfill" style="width:0%"></div></div>
   </div>
   <div class="messages" id="msgs"></div>
-  <div class="inputbar">
-    <textarea id="inp" rows="1" placeholder="Ask anything..." onkeydown="onKey(event)" oninput="rsz(this)"></textarea>
+  <div style="padding:6px 13px;border-bottom:0.5px solid var(--border);background:var(--surface2);position:relative">
+  <div style="display:flex;align-items:center;gap:8px">
+    <span style="font-size:11px;font-family:var(--fm);color:var(--hint)">🌍 Language:</span>
+    <div style="position:relative;flex:1">
+      <input 
+        id="langSearch" 
+        type="text" 
+        placeholder="Search language... | हिंदी | தமிழ் | తెలుగు"
+        style="width:100%;font-family:var(--fm);font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--bg);color:var(--text);outline:none"
+        oninput="filterLangs(this.value)"
+        onfocus="showLangDropdown()"
+      />
+      <div id="langDropdown" style="display:none;position:absolute;bottom:110%;left:0;right:0;background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;z-index:100;scrollbar-width:thin">
+      </div>
+    </div>
+    <span id="selectedLang" style="font-size:11px;font-family:var(--fm);color:var(--accent);min-width:60px">Auto</span>
+    <button onclick="resetLang()" style="font-size:10px;font-family:var(--fm);padding:3px 8px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer">Reset</button>
+  </div>
+</div>
+<div class="inputbar">
+    <textarea id="inp" rows="1" placeholder="Ask anything... | हिंदी | தமிழ் | తెలుగు | বাংলা" onkeydown="onKey(event)" oninput="rsz(this)"></textarea>
     <button class="sendbtn" id="sbtn" onclick="send()">Send →</button>
   </div>
 </div>
 <script>
  const API_ENDPOINT = '/api/chat';
-  const SYSTEM = `You are NexusBot — a sharp, intelligent, friendly AI assistant. Answer clearly and concisely. When a user asks a genuinely great question, begin your reply with "+XP". For facts: make them fascinating. For news: be structured and clear.`;
+  function getSystem() {
+  const langInstruction = selectedLanguage === 'auto'
+    ? 'Always detect the language the user is writing in and reply in the SAME language automatically. If user writes in Hindi reply in Hindi. If user writes in Tamil reply in Tamil. Never force English.'
+    : `Always reply in ${selectedLanguage} language no matter what. Never switch to another language even if user writes in different language.`;
+  return `You are NexusBot — a sharp, intelligent, friendly AI assistant. Answer clearly and concisely. When a user asks a genuinely great question, begin your reply with "+XP". For facts: make them fascinating. For news: be structured and clear. IMPORTANT: ${langInstruction}`;
+}
   let model = 'llama-3.3-70b-versatile', history = [], xp = 0, level = 1, streak = 0, msgCount = 0, busy = false;
-  const msgs = document.getElementById('msgs'), inp = document.getElementById('inp'), sbtn = document.getElementById('sbtn');
+  const LANGUAGES = [
+  {name:'Auto Detect', native:'🌍 Auto', code:'auto'},
+  {name:'Hindi', native:'हिंदी', code:'hindi'},
+  {name:'English', native:'English', code:'english'},
+  {name:'Marathi', native:'मराठी', code:'marathi'},
+  {name:'Bengali', native:'বাংলা', code:'bengali'},
+  {name:'Tamil', native:'தமிழ்', code:'tamil'},
+  {name:'Telugu', native:'తెలుగు', code:'telugu'},
+  {name:'Kannada', native:'ಕನ್ನಡ', code:'kannada'},
+  {name:'Malayalam', native:'മലയാളം', code:'malayalam'},
+  {name:'Gujarati', native:'ગુજરાતી', code:'gujarati'},
+  {name:'Punjabi', native:'ਪੰਜਾਬੀ', code:'punjabi'},
+  {name:'Odia', native:'ଓଡ଼ିଆ', code:'odia'},
+  {name:'Assamese', native:'অসমীয়া', code:'assamese'},
+  {name:'Maithili', native:'मैथिली', code:'maithili'},
+  {name:'Sanskrit', native:'संस्कृत', code:'sanskrit'},
+  {name:'Urdu', native:'اردو', code:'urdu'},
+  {name:'Sindhi', native:'सिंधी', code:'sindhi'},
+  {name:'Kashmiri', native:'कश्मीरी', code:'kashmiri'},
+  {name:'Nepali', native:'नेपाली', code:'nepali'},
+  {name:'Konkani', native:'कोंकणी', code:'konkani'},
+  {name:'Dogri', native:'डोगरी', code:'dogri'},
+  {name:'Bodo', native:'बोडो', code:'bodo'},
+  {name:'Santhali', native:'संथाली', code:'santhali'},
+  {name:'Manipuri', native:'মণিপুরী', code:'manipuri'},
+  {name:'Spanish', native:'Español', code:'spanish'},
+  {name:'French', native:'Français', code:'french'},
+  {name:'Arabic', native:'العربية', code:'arabic'},
+  {name:'Chinese', native:'中文', code:'chinese'},
+  {name:'Japanese', native:'日本語', code:'japanese'},
+];
+
+let selectedLanguage = 'auto';
+
+function showLangDropdown() {
+  renderLangDropdown(LANGUAGES);
+  document.getElementById('langDropdown').style.display = 'block';
+  document.addEventListener('click', closeLangDropdown);
+}
+
+function closeLangDropdown(e) {
+  const dropdown = document.getElementById('langDropdown');
+  const search = document.getElementById('langSearch');
+  if (!dropdown.contains(e.target) && e.target !== search) {
+    dropdown.style.display = 'none';
+    document.removeEventListener('click', closeLangDropdown);
+  }
+}
+
+function renderLangDropdown(langs) {
+  const dd = document.getElementById('langDropdown');
+  dd.innerHTML = langs.map(l => `
+    <div
+      onclick="selectLang('${l.code}','${l.native}')"
+      style="padding:7px 12px;cursor:pointer;font-size:12px;font-family:var(--fm);color:var(--text);display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border)"
+      onmouseover="this.style.background='var(--surface)'"
+      onmouseout="this.style.background='transparent'"
+    >
+      <span>${l.native}</span>
+      <span style="color:var(--hint);font-size:10px">${l.name}</span>
+    </div>
+  `).join('');
+}
+
+function filterLangs(query) {
+  showLangDropdown();
+  if (!query) { renderLangDropdown(LANGUAGES); return; }
+  const filtered = LANGUAGES.filter(l =>
+    l.name.toLowerCase().includes(query.toLowerCase()) ||
+    l.native.includes(query)
+  );
+  renderLangDropdown(filtered.length ? filtered : [{name:'Not found', native:'❌ No results', code:'auto'}]);
+}
+
+function selectLang(code, native) {
+  selectedLanguage = code;
+  document.getElementById('selectedLang').textContent = native;
+  document.getElementById('langSearch').value = '';
+  document.getElementById('langDropdown').style.display = 'none';
+  if (code !== 'auto') {
+    addMsg('bot', `Language set to ${native}! I will now reply in this language 🎉`, 'sys');
+  } else {
+    addMsg('bot', 'Auto detect enabled! I will match your language automatically 🌍', 'sys');
+  }
+}
+
+function resetLang() {
+  selectedLanguage = 'auto';
+  document.getElementById('selectedLang').textContent = 'Auto';
+  document.getElementById('langSearch').value = '';
+} inp = document.getElementById('inp'), sbtn = document.getElementById('sbtn');
   window.addEventListener('load', () => { addMsg('bot', 'NexusBot online! Powered by Groq free API.\n\nI can answer questions, share daily facts, news digests, help with tasks and research.\n\nEarn XP every message — reach Level 5 for Agent Mode!\n\nWhat would you like to explore?', 'sys'); gainXP(5); streak = 1; updateStats(); });
   function setModel(m, btn) { model = m; document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
   function addMsg(role, text, type) {
@@ -128,7 +242,7 @@
   function setLive(s) { const dot = document.getElementById('liveDot'), lbl = document.getElementById('liveLbl'); if (s==='thinking'){dot.style.background='#fbbf24';lbl.textContent='thinking...';} else if(s==='error'){dot.style.background='#f87171';lbl.textContent='error';} else{dot.style.background='#34d399';lbl.textContent='online';} }
   async function callBackend(userMsg, sysPatch='') {
     setLive('thinking');
-    const messages = [{role:'system',content:SYSTEM+(sysPatch?'\n'+sysPatch:'')}, ...history, {role:'user',content:userMsg}];
+    const messages = [{role:'system',content:getSystem()+(sysPatch?'\n'+sysPatch:'')}, ...history, {role:'user',content:userMsg}];
     try {
       const res = await fetch(API_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages, model})});
       const data = await res.json();
