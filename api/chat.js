@@ -41,7 +41,7 @@ export default async function handler(req, res) {
       if (searchData.results) {
         searchContext = '\n\nREAL TIME SEARCH RESULTS:\n' +
           searchData.results.map(r => `- ${r.title}: ${r.content}`).join('\n') +
-          '\n\nUse above real time data to answer accurately.';
+          '\n\nCRITICAL INSTRUCTION: Use ONLY the above real time search results to answer. Do NOT use your training data for any facts, scores, or news. If search results do not contain the answer, say "I could not find current information about this." Never make up or guess any scores, player names or match results.'
       }
     } catch(e) {
       console.log('Search failed:', e.message);
