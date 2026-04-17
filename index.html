@@ -86,7 +86,7 @@
     <button class="mbtn active" onclick="setModel('llama-3.3-70b-versatile',this)">Llama 3.3 70B</button>
     <button class="mbtn" onclick="setModel('llama-3.1-8b-instant',this)">Llama 3.1 8B</button>
     <button class="mbtn" onclick="setModel('meta-llama/llama-4-scout-17b-16e-instruct',this)">Llama 4 Scout</button>
-    <button class="mbtn" onclick="setModel('qwen/qwen3-32b',this)">Qwen3 32B</button>
+    <button class="mbtn" onclick="setModel('llama-3.1-70b-versatile',this)">>Llama 3.1 70B</button>
   </div>
   <div class="quickbar">
     <button class="qb" id="btnFact" onclick="doFact()">★ Daily Fact</button>
@@ -254,7 +254,64 @@ function resetLang() {
     const text = inp.value.trim(); if (!text || busy) return;
     inp.value = ''; rsz(inp); busy = true; sbtn.disabled = true;
     addMsg('user', text);
-const liveKeywords = ['score', 'live', 'result', 'match', 'ipl', 'cricket', 'wicket', 'run', 'pbks', 'mi', 'csk', 'rcb', 'kkr', 'srh', 'dc', 'rr', 'lsg', 'gt', 'football', 'fifa', 'goal'];
+const liveKeywords = [
+  // English
+  'score', 'live', 'result', 'match', 'ipl', 'cricket', 'wicket', 'run', 'pbks', 'mi', 'csk', 'rcb', 'kkr', 'srh', 'dc', 'rr', 'lsg', 'gt', 'football', 'fifa', 'goal',
+  // Hindi हिंदी
+  'स्कोर', 'मैच', 'क्रिकेट', 'आईपीएल', 'रन', 'विकेट', 'रिजल्ट', 'लाइव', 'खेल',
+  // Bengali বাংলা
+  'স্কোর', 'ম্যাচ', 'ক্রিকেট', 'রান', 'উইকেট', 'ফলাফল', 'লাইভ',
+  // Tamil தமிழ்
+  'ஸ்கோர்', 'மேட்ச்', 'கிரிக்கெட்', 'ரன்', 'விக்கெட்', 'முடிவு',
+  // Telugu తెలుగు
+  'స్కోర్', 'మ్యాచ్', 'క్రికెట్', 'రన్', 'వికెట్', 'ఫలితం',
+  // Marathi मराठी
+  'स्कोअर', 'सामना', 'क्रिकेट', 'धाव', 'बाद', 'निकाल',
+  // Gujarati ગુજરાતી
+  'સ્કોર', 'મેચ', 'ક્રિકેટ', 'રન', 'વિકેટ', 'પરિણામ',
+  // Kannada ಕನ್ನಡ
+  'ಸ್ಕೋರ್', 'ಮ್ಯಾಚ್', 'ಕ್ರಿಕೆಟ್', 'ರನ್', 'ವಿಕೆಟ್', 'ಫಲಿತಾಂಶ',
+  // Malayalam മലയാളം
+  'സ്കോർ', 'മാച്ച്', 'ക്രിക്കറ്റ്', 'റൺ', 'വിക്കറ്റ്', 'ഫലം',
+  // Punjabi ਪੰਜਾਬੀ
+  'ਸਕੋਰ', 'ਮੈਚ', 'ਕ੍ਰਿਕੇਟ', 'ਰਨ', 'ਵਿਕਟ', 'ਨਤੀਜਾ',
+  // Odia ଓଡ଼ିଆ
+  'ସ୍କୋର', 'ମ୍ୟାଚ', 'କ୍ରିକେଟ', 'ରନ', 'ୱିକେଟ', 'ଫଳାଫଳ',
+  // Assamese অসমীয়া
+  'স্কোৰ', 'মেচ', 'ক্ৰিকেট', 'ৰান', 'উইকেট', 'ফলাফল',
+  // Urdu اردو
+  'اسکور', 'میچ', 'کرکٹ', 'رن', 'وکٹ', 'نتیجہ',
+  // Maithili मैथिली
+  'स्कोर', 'मैच', 'क्रिकेट', 'रन', 'विकेट', 'नतीजा',
+  // Sanskrit संस्कृत
+  'स्कोर', 'क्रीडा', 'परिणाम',
+  // Sindhi सिंधी
+  'اسڪور', 'ميچ', 'ڪرڪيٽ', 'رن', 'وڪيٽ',
+  // Kashmiri कश्मीरी
+  'سکور', 'میچ', 'کرکٹ', 'رن', 'وکٹ',
+  // Nepali नेपाली
+  'स्कोर', 'खेल', 'क्रिकेट', 'रन', 'विकेट', 'नतिजा',
+  // Konkani कोंकणी
+  'स्कोर', 'मॅच', 'क्रिकेट', 'रन', 'विकेट',
+  // Dogri डोगरी
+  'स्कोर', 'मैच', 'क्रिकेट', 'रन', 'विकेट',
+  // Bodo बोडो
+  'स्कोर', 'मैच', 'क्रिकेट', 'रन',
+  // Santhali संथाली
+  'স্কোর', 'ম্যাচ', 'ক্রিকেট', 'রান',
+  // Manipuri মণিপুরী
+  'স্কোর', 'মেচ', 'ক্রিকেট', 'রান',
+  // Spanish
+  'marcador', 'partido', 'gol', 'resultado', 'fútbol', 'tenis', 'baloncesto',
+  // French
+  'score', 'match', 'but', 'résultat', 'football', 'tennis',
+  // Arabic
+  'نتيجة', 'مباراة', 'كرة', 'هدف', 'كريكيت',
+  // Chinese 中文
+  '比分', '比赛', '板球', '足球', '结果', '进球',
+  // Japanese 日本語
+  'スコア', '試合', 'クリケット', 'サッカー', '結果', 'ゴール',
+];
 if (liveKeywords.some(k => text.toLowerCase().includes(k))) {
   addMsg('bot', '🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "MI vs PBKS live score"\n\nI will also try to answer from my knowledge:', 'sys');
 }
