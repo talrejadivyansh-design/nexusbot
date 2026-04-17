@@ -1,5 +1,3 @@
-const ipRequests = {};
-
 export default async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
@@ -7,17 +5,6 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  // LEVEL 2 — Rate limit per IP
-  const ip = req.headers['x-forwarded-for'] || 'unknown';
-  const now = Date.now();
-  if (!ipRequests[ip]) ipRequests[ip] = [];
-  ipRequests[ip] = ipRequests[ip].filter(t => now - t < 60000);
-  if (ipRequests[ip].length >= 10) {
-    return res.status(429).json({ error: "Too many requests! Please wait 1 minute." });
-  }
-  ipRequests[ip].push(now);
-
-  // LEVEL 1 — Environment Variables
   const keys = [
     process.env.GROQ_API_KEY,
     process.env.GROQ_API_KEY_1,
@@ -30,12 +17,43 @@ export default async function handler(req, res) {
 
   const { messages, model } = req.body;
 
-  // LEVEL 3 — Input validation
-  if (!messages || !Array.isArray(messages)) {
-    return res.status(400).json({ error: "Invalid request" });
+  // Check if message needs real time search
+  const lastMessage = messages[messages.length - 1].content.toLowerCase();
+  const needsSearch = ['news', 'latest', 'today', 'current', 'recent', 'score',
+    'match', 'ipl', 'cricket', 'sports', 'weather', 'price', '2024', '2025', '2026',
+    'अभी', 'आज', 'ताजा', 'खबर', 'समाचार'].some(word => lastMessage.includes(word));
+
+  let searchContext = '';
+
+  if (needsSearch && process.env.TAVILY_API_KEY) {
+    try {
+      const searchRes = await fetch('https://api.tavily.com/search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          api_key: process.env.TAVILY_API_KEY,
+          query: messages[messages.length - 1].content,
+          search_depth: 'basic',
+          max_results: 3
+        })
+      });
+      const searchData = await searchRes.json();
+      if (searchData.results) {
+        searchContext = '\n\nREAL TIME SEARCH RESULTS:\n' +
+          searchData.results.map(r => `- ${r.title}: ${r.content}`).join('\n') +
+          '\n\nUse above real time data to answer accurately.';
+      }
+    } catch(e) {
+      console.log('Search failed:', e.message);
+    }
   }
-  if (messages.length > 50) {
-    return res.status(400).json({ error: "Too many messages in history" });
+
+  const messagesWithContext = [...messages];
+  if (searchContext) {
+    messagesWithContext[messagesWithContext.length - 1] = {
+      role: 'user',
+      content: messages[messages.length - 1].content + searchContext
+    };
   }
 
   const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
@@ -46,7 +64,7 @@ export default async function handler(req, res) {
     },
     body: JSON.stringify({
       model: model || "llama-3.3-70b-versatile",
-      messages,
+      messages: messagesWithContext,
       max_tokens: 900,
       temperature: 0.8
     })
