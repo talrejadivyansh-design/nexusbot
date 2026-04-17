@@ -86,7 +86,7 @@
     <button class="mbtn active" onclick="setModel('llama-3.3-70b-versatile',this)">Llama 3.3 70B</button>
     <button class="mbtn" onclick="setModel('llama-3.1-8b-instant',this)">Llama 3.1 8B</button>
     <button class="mbtn" onclick="setModel('meta-llama/llama-4-scout-17b-16e-instruct',this)">Llama 4 Scout</button>
-    <button class="mbtn" onclick="setModel('llama-3.1-70b-versatile',this)">>Llama 3.1 70B</button>
+    <button class="mbtn" onclick="setModel('compound-beta-mini',this)">Compound Mini</button>
   </div>
   <div class="quickbar">
     <button class="qb" id="btnFact" onclick="doFact()">★ Daily Fact</button>
@@ -313,7 +313,26 @@ const liveKeywords = [
   'スコア', '試合', 'クリケット', 'サッカー', '結果', 'ゴール',
 ];
 if (liveKeywords.some(k => text.toLowerCase().includes(k))) {
-  addMsg('bot', '🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "MI vs PBKS live score"\n\nI will also try to answer from my knowledge:', 'sys');
+  const liveMsg = selectedLanguage === 'hindi'
+  ? '🏏 लाइव स्कोर के लिए यहाँ जाएं:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google पर सर्च करें: "MI vs PBKS live score"\n\nमैं अपनी जानकारी से भी उत्तर देने की कोशिश करूंगा:'
+  : selectedLanguage === 'marathi'
+  ? '🏏 लाइव स्कोरसाठी येथे जा:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nमी माझ्या ज्ञानातून उत्तर देण्याचा प्रयत्न करेन:'
+  : selectedLanguage === 'bengali'
+  ? '🏏 লাইভ স্কোরের জন্য এখানে যান:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nআমি আমার জ্ঞান থেকে উত্তর দেওয়ার চেষ্টা করব:'
+  : selectedLanguage === 'tamil'
+  ? '🏏 நேரடி ஸ்கோருக்கு இங்கே செல்லுங்கள்:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nஎனது அறிவிலிருந்து பதிலளிக்க முயற்சிப்பேன்:'
+  : selectedLanguage === 'telugu'
+  ? '🏏 లైవ్ స్కోర్ కోసం ఇక్కడికి వెళ్ళండి:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nనా జ్ఞానం నుండి సమాధానం ఇవ్వడానికి ప్రయత్నిస్తాను:'
+  : selectedLanguage === 'kannada'
+  ? '🏏 ಲೈವ್ ಸ್ಕೋರ್‌ಗಾಗಿ ಇಲ್ಲಿಗೆ ಹೋಗಿ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nನನ್ನ ಜ್ಞಾನದಿಂದ ಉತ್ತರಿಸಲು ಪ್ರಯತ್ನಿಸುತ್ತೇನೆ:'
+  : selectedLanguage === 'malayalam'
+  ? '🏏 തത്സമയ സ്കോറിനായി ഇവിടെ പോകൂ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nഎന്റെ അറിവിൽ നിന്ന് ഉത്തരം നൽകാൻ ശ്രമിക്കും:'
+  : selectedLanguage === 'gujarati'
+  ? '🏏 લાઇવ સ્કોર માટે અહીં જાઓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nહું મારા જ્ઞાનથી જવાબ આપવાનો પ્રયત્ન કરીશ:'
+  : selectedLanguage === 'punjabi'
+  ? '🏏 ਲਾਈਵ ਸਕੋਰ ਲਈ ਇੱਥੇ ਜਾਓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nਮੈਂ ਆਪਣੇ ਗਿਆਨ ਤੋਂ ਜਵਾਬ ਦੇਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰਾਂਗਾ:'
+  : '🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "MI vs PBKS live score"\n\nI will also try to answer from my knowledge:';
+addMsg('bot', liveMsg, 'sys');
 }
 if (history.length > 10) history = history.slice(-10);
 history.push({role:'user', content:text});
