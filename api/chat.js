@@ -32,7 +32,7 @@ export default async function handler(req, res) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           api_key: process.env.TAVILY_API_KEY,
-          query: messages[messages.length - 1].content,
+          query: messages[messages.length - 1].content + ' 2026 latest news today',
           search_depth: 'basic',
           max_results: 3
         })
