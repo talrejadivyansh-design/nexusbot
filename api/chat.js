@@ -6,8 +6,16 @@ export default async function handler(req, res) {
   if (req.method === "OPTIONS") return res.status(200).end();
   if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
 
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return res.status(500).json({ error: "GROQ_API_KEY not set" });
+  const keys = [
+    process.env.GROQ_API_KEY_1,
+    process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3,
+    process.env.GROQ_API_KEY_4,
+    process.env.GROQ_API_KEY_5,
+  ].filter(Boolean);
+
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  if (!key) return res.status(500).json({ error: "No API keys configured" });
 
   const { messages, model } = req.body;
 
