@@ -85,8 +85,8 @@
     <span class="modelbar-label">Model:</span>
     <button class="mbtn active" onclick="setModel('llama-3.3-70b-versatile',this)">Llama 3.3 70B</button>
     <button class="mbtn" onclick="setModel('llama-3.1-8b-instant',this)">Llama 3.1 8B</button>
-    <button class="mbtn" onclick="setModel('meta-llama/llama-4-scout-17b-16e-instruct',this)">>Llama 4 Scout</button>
-    <button class="mbtn" onclick="setModel('openai/gpt-oss-20b',this)">>GPT OSS 20B</button>
+    <button class="mbtn" onclick="setModel('meta-llama/llama-4-scout-17b-16e-instruct',this)">Llama 4 Scout</button>
+    <button class="mbtn" onclick="setModel('deepseek-r1-distill-llama-70b',this)">DeepSeek R1</button>
   </div>
   <div class="quickbar">
     <button class="qb" id="btnFact" onclick="doFact()">★ Daily Fact</button>
@@ -120,7 +120,7 @@
     const lbl = document.createElement('div'); lbl.className = 'mlabel';
     const labels = { fact:'daily fact', news:'news digest', reward:'reward +xp', sys:'nexusbot', err:'error' };
     lbl.textContent = labels[tc] || (role === 'user' ? 'you' : 'nexusbot');
-    const b = document.createElement('div'); b.className = 'bubble'; b.textContent = text;
+    const b = document.createElement('div'); b.className = 'bubble'; b.b.innerHTML = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/### (.*?)(\n|$)/g,'<br><strong>$1</strong><br>').replace(/\n/g,'<br>');
     wrap.appendChild(lbl); wrap.appendChild(b); msgs.appendChild(wrap); msgs.scrollTop = msgs.scrollHeight; return b;
   }
   function addTyping() { const w = document.createElement('div'); w.className = 'msg mb'; w.id = 'typing'; const d = document.createElement('div'); d.className = 'typedots'; d.innerHTML = '<span></span><span></span><span></span>'; w.appendChild(d); msgs.appendChild(w); msgs.scrollTop = msgs.scrollHeight; }
