@@ -258,6 +258,7 @@ const liveKeywords = ['score', 'live', 'result', 'match', 'ipl', 'cricket', 'wic
 if (liveKeywords.some(k => text.toLowerCase().includes(k))) {
   addMsg('bot', '🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "MI vs PBKS live score"\n\nI will also try to answer from my knowledge:', 'sys');
 }
+if (history.length > 10) history = history.slice(-10);
 history.push({role:'user', content:text});
     addTyping(); const reply = await callBackend(text); rmTyping();
     if (reply) {
