@@ -338,7 +338,7 @@ history.push({role:'user', content:text});
     addTyping(); const reply = await callBackend(text); rmTyping();
     if (reply) {
   addMsg('bot', reply); history.push({role:'assistant', content:reply}); msgCount++;
-  const badWords = ['stupid', 'idiot', 'fool', 'shut up', 'hate', 'ugly', 'dumb', 'useless', 'shut', 'bc', 'mc', 'bsdk', 'chutiya', 'mad
+  const badWords = ['stupid', 'idiot', 'fool', 'shut up', 'hate', 'ugly', 'dumb', 'useless', 'shut', 'bc', 'mc', 'bsdk', 'chutiya', 'madarchod','bhenchod','gandu','harami','sala','saala','randi','gaandu'];
 const isBad = badWords.some(word => text.toLowerCase().includes(word));
 if (isBad) {
   gainXP(0);
