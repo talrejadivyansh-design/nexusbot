@@ -225,8 +225,7 @@ function resetLang() {
   document.getElementById('selectedLang').textContent = 'Auto';
   document.getElementById('langSearch').value = '';
 } inp = document.getElementById('inp'), sbtn = document.getElementById('sbtn');
-  window.addEventListener('load', () => { addMsg('bot', 'NexusBot online! Powered by Groq free API.\n\nI can answer questions, share daily facts, news digests, help with tasks and research.\n\nEarn XP every message — reach Level 5 for Agent Mode!\n\nWhat would you like to explore?', 'sys'); gainXP(5); streak = 1; updateStats(); });
-  function setModel(m, btn) { model = m; document.querySelectorAll('.mbtn').forEach(b => b.classList.remove('active')); btn.classList.add('active'); }
+  window.addEventListener('load', () => { addMsg('bot', 'NexusBot online! Powered by Groq free API.\n\nI can answer questions, share daily facts, news digests, help with tasks and research.\n\nEarn XP every message — reach Level 5 for Agent Mode!\n\nWhat would you like to explore?', 'sys');gainXP(3); streak = 1; updateStats();
   function addMsg(role, text, type) {
     const wrap = document.createElement('div');
     const tc = type || (role === 'user' ? 'mu' : 'mb');
@@ -339,8 +338,15 @@ history.push({role:'user', content:text});
     addTyping(); const reply = await callBackend(text); rmTyping();
     if (reply) {
       addMsg('bot', reply); history.push({role:'assistant', content:reply}); msgCount++;
-      gainXP(reply.startsWith('+XP') ? 20 : 10);
-      if (msgCount % 5 === 0) { streak++; updateStats(); addMsg('bot', `Streak ×${streak}! +8 bonus XP!`, 'reward'); gainXP(8); }
+      const badWords = ['stupid', 'idiot', 'fool', 'shut up', 'hate', 'ugly', 'dumb', 'useless', 'shut', 'bc', 'mc', 'bsdk', 'chutiya', 'madarchod', 'bhenchod', 'gandu', 'harami', 'sala', 'saala', 'randi', 'gaandu'];
+const isBad = badWords.some(word => text.toLowerCase().includes(word));
+if (isBad) {
+  gainXP(0);
+  addMsg('bot', 'Please keep our conversation respectful. No XP earned for this message.', 'err');
+} else {
+  gainXP(10);
+}
+     if (msgCount % 5 === 0) { streak++; updateStats(); addMsg('bot', `Streak ×${streak}! +7 bonus XP for staying consistent. Keep going!`, 'reward'); gainXP(7); }
     }
     busy = false; sbtn.disabled = false;
   }
@@ -348,14 +354,14 @@ history.push({role:'user', content:text});
     if (busy) return; busy = true; document.getElementById('btnFact').disabled = true;
     addMsg('user', 'Give me today\'s daily fact'); addTyping();
     const r = await callBackend('Share one truly fascinating little-known fact. One punchy sentence first, then 2-3 sentences of context.', 'Be enthusiastic and educational.');
-    rmTyping(); if (r) { addMsg('bot', r, 'fact'); gainXP(15); }
+    rmTyping(); if (r) { addMsg('bot', r, 'fact'); gainXP(5); }
     busy = false; document.getElementById('btnFact').disabled = false;
   }
   async function doNews() {
     if (busy) return; busy = true; document.getElementById('btnNews').disabled = true;
     addMsg('user', 'Give me a news digest'); addTyping();
     const r = await callBackend('Give a news digest with 4 sections:\n1) AI & Technology\n2) Science & Space\n3) World Affairs\n4) Business & Economy\nFor each write 2-3 sentences on key trends.', 'Be concise and factual like a news anchor.');
-    rmTyping(); if (r) { addMsg('bot', r, 'news'); gainXP(12); }
+    rmTyping(); if (r) { addMsg('bot', r, 'news'); gainXP(5);  }
     busy = false; document.getElementById('btnNews').disabled = false;
   }
   async function doQuick(q) { if (busy) return; inp.value = q; await send(); }
@@ -363,7 +369,7 @@ history.push({role:'user', content:text});
   function levelUp() {
     const t = document.createElement('div'); t.className = 'lvtoast'; t.textContent = '⚡ LEVEL ' + level + ' UNLOCKED!';
     document.body.appendChild(t); setTimeout(() => t.remove(), 2900);
-    addMsg('bot', `Level ${level} reached! ${level>=5?'Agent Mode active!':((5-level)+' levels to Agent Mode.')}\n+20 bonus XP!`, 'reward'); gainXP(20);
+    addMsg('bot', `Level ${level} reached! ${level>=5?'Agent Mode active!':((5-level)+' levels to Agent Mode.')}\n+20 bonus XP!`, 'reward'); gainXP(25);
   }
   function updateStats() { const need=level*100; document.getElementById('xplb').textContent=xp+' XP'; document.getElementById('lvlb').textContent='Lv.'+level; document.getElementById('stlb').textContent=streak+' streak'; document.getElementById('lvnum').textContent=level; document.getElementById('xpval').textContent=xp+' / '+need; document.getElementById('xpfill').style.width=Math.min(100,(xp/need)*100)+'%'; }
   function onKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
