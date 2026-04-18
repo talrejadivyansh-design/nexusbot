@@ -13,7 +13,8 @@
       --accent: #6c8fff; --accent-bg: #1a2340; --green: #34d399; --green-bg: #0d2820;
       --amber: #fbbf24; --amber-bg: #271e08; --red: #f87171; --red-bg: #2a0f0f;
       --blue-bg: #0e1e36; --blue-text: #93c5fd;
-      --fm: 'JetBrains Mono', monospace; --fu: 'Syne', sans-serif; --radius: 14px; --radius-sm: 8px;
+      --fm: 'JetBrains Mono', monospace; --fu: 'Syne', sans-serif;
+      --radius: 14px; --radius-sm: 8px;
     }
     html, body { height: 100%; }
     body { font-family: var(--fu); background: var(--bg); color: var(--text); display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; }
@@ -57,6 +58,18 @@
     .typedots span:nth-child(2) { animation-delay: .2s; }
     .typedots span:nth-child(3) { animation-delay: .4s; }
     @keyframes bonce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-6px); } }
+    .langrow { padding: 6px 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface2); }
+    .langinner { display: flex; align-items: center; gap: 8px; }
+    .langlabel { font-size: 11px; font-family: var(--fm); color: var(--hint); flex-shrink: 0; }
+    .langwrap { position: relative; flex: 1; }
+    .langinput { width: 100%; font-family: var(--fm); font-size: 11px; padding: 4px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+    .langdrop { display: none; position: absolute; bottom: 110%; left: 0; right: 0; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); max-height: 180px; overflow-y: auto; z-index: 100; scrollbar-width: thin; }
+    .langitem { padding: 7px 12px; cursor: pointer; font-size: 12px; font-family: var(--fm); color: var(--text); display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid var(--border); }
+    .langitem:hover { background: var(--surface); }
+    .langitem span:last-child { color: var(--hint); font-size: 10px; }
+    .langsel { font-size: 11px; font-family: var(--fm); color: var(--accent); min-width: 60px; flex-shrink: 0; }
+    .resetbtn { font-size: 10px; font-family: var(--fm); padding: 3px 8px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface); color: var(--muted); cursor: pointer; flex-shrink: 0; }
+    .resetbtn:hover { color: var(--text); }
     .inputbar { display: flex; gap: 8px; padding: 11px 16px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface2); align-items: flex-end; }
     .inputbar textarea { flex: 1; font-family: var(--fu); font-size: 13.5px; padding: 8px 13px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); resize: none; min-height: 38px; max-height: 100px; line-height: 1.45; outline: none; }
     .inputbar textarea:focus { border-color: var(--hint); }
@@ -86,295 +99,209 @@
     <button class="mbtn active" onclick="setModel('llama-3.3-70b-versatile',this)">Llama 3.3 70B</button>
     <button class="mbtn" onclick="setModel('llama-3.1-8b-instant',this)">Llama 3.1 8B</button>
     <button class="mbtn" onclick="setModel('meta-llama/llama-4-scout-17b-16e-instruct',this)">Llama 4 Scout</button>
-    <button class="mbtn" onclick="setModel('compound-beta-mini',this)">Compound Mini</button>
+    <button class="mbtn" onclick="setModel('llama-3.2-11b-vision-preview',this)">Llama 3.2 11B</button>
   </div>
   <div class="quickbar">
     <button class="qb" id="btnFact" onclick="doFact()">★ Daily Fact</button>
     <button class="qb" id="btnNews" onclick="doNews()">◆ News Digest</button>
     <button class="qb" onclick="doQuick('What are all the things you can help me with?')">? Help</button>
     <button class="qb" onclick="doQuick('Give me a powerful motivational quote with explanation')">✦ Motivate</button>
-    <button class="qb" onclick="doQuick('Share a mind-blowing fact most people never heard of')">◉ Surprise</button>
+    <button class="qb" onclick="doQuick('Share a mind-blowing science or history fact most people never heard of')">◉ Surprise</button>
     <button class="qb" onclick="doQuick('Give me 3 productivity tips I can use right now')">⚡ Tips</button>
   </div>
   <div class="xprow">
     <div class="xplabels"><span>XP — Level <span id="lvnum">1</span></span><span id="xpval">0 / 100</span></div>
     <div class="xptrack"><div class="xpfill" id="xpfill" style="width:0%"></div></div>
   </div>
-  <div class="messages" id="msgs"></div>
-  <div style="padding:6px 13px;border-bottom:0.5px solid var(--border);background:var(--surface2);position:relative">
-  <div style="display:flex;align-items:center;gap:8px">
-    <span style="font-size:11px;font-family:var(--fm);color:var(--hint)">🌍 Language:</span>
-    <div style="position:relative;flex:1">
-      <input 
-        id="langSearch" 
-        type="text" 
-        placeholder="Search language... | हिंदी | தமிழ் | తెలుగు"
-        style="width:100%;font-family:var(--fm);font-size:11px;padding:4px 10px;border-radius:var(--radius-sm);border:0.5px solid var(--border);background:var(--bg);color:var(--text);outline:none"
-        oninput="filterLangs(this.value)"
-        onfocus="showLangDropdown()"
-      />
-      <div id="langDropdown" style="display:none;position:absolute;bottom:110%;left:0;right:0;background:var(--surface2);border:0.5px solid var(--border);border-radius:var(--radius-sm);max-height:180px;overflow-y:auto;z-index:100;scrollbar-width:thin">
+  <div class="langrow">
+    <div class="langinner">
+      <span class="langlabel">🌍 Language:</span>
+      <div class="langwrap">
+        <input class="langinput" id="langSearch" type="text"
+          placeholder="Search language... | हिंदी | தமிழ் | తెలుగు"
+          oninput="filterLangs(this.value)"
+          onfocus="showLangDropdown()" />
+        <div class="langdrop" id="langDrop"></div>
       </div>
+      <span class="langsel" id="langSel">Auto</span>
+      <button class="resetbtn" onclick="resetLang()">Reset</button>
     </div>
-    <span id="selectedLang" style="font-size:11px;font-family:var(--fm);color:var(--accent);min-width:60px">Auto</span>
-    <button onclick="resetLang()" style="font-size:10px;font-family:var(--fm);padding:3px 8px;border-radius:99px;border:0.5px solid var(--border);background:var(--surface);color:var(--muted);cursor:pointer">Reset</button>
   </div>
-</div>
-<div class="inputbar">
-    <textarea id="inp" rows="1" placeholder="Ask anything... | हिंदी | தமிழ் | తెలుగు | বাংলা" onkeydown="onKey(event)" oninput="rsz(this)"></textarea>
+  <div class="messages" id="msgs"></div>
+  <div class="inputbar">
+    <textarea id="inp" rows="1"
+      placeholder="Ask anything... | हिंदी | தமிழ் | తెలుగు | বাংলা"
+      onkeydown="onKey(event)"
+      oninput="rsz(this)"></textarea>
     <button class="sendbtn" id="sbtn" onclick="send()">Send →</button>
   </div>
 </div>
 <script>
- const API_ENDPOINT = '/api/chat';
-  function getSystem() {
-  const langInstruction = selectedLanguage === 'auto'
-    ? 'Always detect the language the user is writing in and reply in the SAME language automatically. If user writes in Hindi reply in Hindi. If user writes in Tamil reply in Tamil. Never force English.'
-    : `Always reply in ${selectedLanguage} language no matter what. Never switch to another language even if user writes in different language.`;
-  return `You are NexusBot — a sharp, intelligent, friendly AI assistant. Answer clearly and concisely. When a user asks a genuinely great question, begin your reply with "+XP". For facts: make them fascinating. For news: always use the real time search results provided to give accurate current news. Never make up news. Always mention specific scores, player names and match results from the search data provided. IMPORTANT: ${langInstruction}`;
-}
-  let model = 'llama-3.3-70b-versatile', history = [], xp = 0, level = 1, streak = 0, msgCount = 0, busy = false;
-  const LANGUAGES = [
-  {name:'Auto Detect', native:'🌍 Auto', code:'auto'},
-  {name:'Hindi', native:'हिंदी', code:'hindi'},
-  {name:'English', native:'English', code:'english'},
-  {name:'Marathi', native:'मराठी', code:'marathi'},
-  {name:'Bengali', native:'বাংলা', code:'bengali'},
-  {name:'Tamil', native:'தமிழ்', code:'tamil'},
-  {name:'Telugu', native:'తెలుగు', code:'telugu'},
-  {name:'Kannada', native:'ಕನ್ನಡ', code:'kannada'},
-  {name:'Malayalam', native:'മലയാളം', code:'malayalam'},
-  {name:'Gujarati', native:'ગુજરાતી', code:'gujarati'},
-  {name:'Punjabi', native:'ਪੰਜਾਬੀ', code:'punjabi'},
-  {name:'Odia', native:'ଓଡ଼ିଆ', code:'odia'},
-  {name:'Assamese', native:'অসমীয়া', code:'assamese'},
-  {name:'Maithili', native:'मैथिली', code:'maithili'},
-  {name:'Sanskrit', native:'संस्कृत', code:'sanskrit'},
-  {name:'Urdu', native:'اردو', code:'urdu'},
-  {name:'Sindhi', native:'सिंधी', code:'sindhi'},
-  {name:'Kashmiri', native:'कश्मीरी', code:'kashmiri'},
-  {name:'Nepali', native:'नेपाली', code:'nepali'},
-  {name:'Konkani', native:'कोंकणी', code:'konkani'},
-  {name:'Dogri', native:'डोगरी', code:'dogri'},
-  {name:'Bodo', native:'बोडो', code:'bodo'},
-  {name:'Santhali', native:'संथाली', code:'santhali'},
-  {name:'Manipuri', native:'মণিপুরী', code:'manipuri'},
-  {name:'Spanish', native:'Español', code:'spanish'},
-  {name:'French', native:'Français', code:'french'},
-  {name:'Arabic', native:'العربية', code:'arabic'},
-  {name:'Chinese', native:'中文', code:'chinese'},
-  {name:'Japanese', native:'日本語', code:'japanese'},
+const API_ENDPOINT='/api/chat';
+const LANGUAGES=[
+  {name:'Auto Detect',native:'🌍 Auto',code:'auto'},
+  {name:'Hindi',native:'हिंदी',code:'hindi'},
+  {name:'English',native:'English',code:'english'},
+  {name:'Marathi',native:'मराठी',code:'marathi'},
+  {name:'Bengali',native:'বাংলা',code:'bengali'},
+  {name:'Tamil',native:'தமிழ்',code:'tamil'},
+  {name:'Telugu',native:'తెలుగు',code:'telugu'},
+  {name:'Kannada',native:'ಕನ್ನಡ',code:'kannada'},
+  {name:'Malayalam',native:'മലയാളം',code:'malayalam'},
+  {name:'Gujarati',native:'ગુજરાતી',code:'gujarati'},
+  {name:'Punjabi',native:'ਪੰਜਾਬੀ',code:'punjabi'},
+  {name:'Odia',native:'ଓଡ଼ିଆ',code:'odia'},
+  {name:'Assamese',native:'অসমীয়া',code:'assamese'},
+  {name:'Maithili',native:'मैथिली',code:'maithili'},
+  {name:'Sanskrit',native:'संस्कृत',code:'sanskrit'},
+  {name:'Urdu',native:'اردو',code:'urdu'},
+  {name:'Sindhi',native:'सिंधी',code:'sindhi'},
+  {name:'Kashmiri',native:'कश्मीरी',code:'kashmiri'},
+  {name:'Nepali',native:'नेपाली',code:'nepali'},
+  {name:'Konkani',native:'कोंकणी',code:'konkani'},
+  {name:'Dogri',native:'डोगरी',code:'dogri'},
+  {name:'Bodo',native:'बोडो',code:'bodo'},
+  {name:'Santhali',native:'संथाली',code:'santhali'},
+  {name:'Manipuri',native:'মণিপুরী',code:'manipuri'},
+  {name:'Spanish',native:'Español',code:'spanish'},
+  {name:'French',native:'Français',code:'french'},
+  {name:'Arabic',native:'العربية',code:'arabic'},
+  {name:'Chinese',native:'中文',code:'chinese'},
+  {name:'Japanese',native:'日本語',code:'japanese'},
 ];
+const BAD_WORDS=['stupid','idiot','fool','shut up','hate','ugly','dumb','useless','bc','mc','bsdk','chutiya','madarchod','bhenchod','gandu','harami','sala','saala','randi','gaandu'];
+const LIVE_KEYWORDS=['score','live','result','match','ipl','cricket','wicket','run','pbks','mi','csk','rcb','kkr','srh','dc','rr','lsg','gt','football','fifa','goal','स्कोर','मैच','क्रिकेट','आईपीएल','रन','विकेट','রান','উইকেট','ஸ்கோர்','மேட்ச்','స్కోర్','మ్యాచ్','ಸ್ಕೋರ್','ಮ್ಯಾಚ್','സ്കോർ','മാച്ച്','સ્કોર','ਸਕੋਰ','اسکور','میچ','marcador','partido','نتيجة','مباراة','比分','比赛','スコア','試合'];
+let selectedLanguage='auto',model='llama-3.3-70b-versatile',history=[],xp=0,level=1,streak=0,msgCount=0,busy=false;
+const msgs=document.getElementById('msgs'),inp=document.getElementById('inp'),sbtn=document.getElementById('sbtn');
 
-let selectedLanguage = 'auto';
-
-function showLangDropdown() {
-  renderLangDropdown(LANGUAGES);
-  document.getElementById('langDropdown').style.display = 'block';
-  document.addEventListener('click', closeLangDropdown);
+function getSystem(){
+  const lang=selectedLanguage==='auto'
+    ?'Always detect the language the user is writing in and reply in the SAME language automatically. Never force English.'
+    :'Always reply in '+selectedLanguage+' language. Never switch languages. Reply directly without showing thinking.';
+  return 'You are NexusBot — a sharp, intelligent, friendly AI assistant. Answer clearly and concisely. When a user asks a genuinely great question, begin your reply with "+XP". For facts: make them fascinating. For news: be structured and clear. For live sports scores, mention your knowledge cutoff and suggest Cricbuzz or ESPNCricinfo. IMPORTANT: '+lang;
 }
 
-function closeLangDropdown(e) {
-  const dropdown = document.getElementById('langDropdown');
-  const search = document.getElementById('langSearch');
-  if (!dropdown.contains(e.target) && e.target !== search) {
-    dropdown.style.display = 'none';
-    document.removeEventListener('click', closeLangDropdown);
+window.addEventListener('load',()=>{
+  addMsg('bot','NexusBot online! Powered by Groq free API.\n\nI can answer questions, share daily facts, news digests, help with tasks and research.\n\nEarn XP every message — reach Level 5 for Agent Mode!\n\nWhat would you like to explore?','sys');
+  gainXP(3);streak=1;updateStats();
+});
+
+function setModel(m,btn){model=m;document.querySelectorAll('.mbtn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+
+function addMsg(role,text,type){
+  const wrap=document.createElement('div');
+  const tc=type||(role==='user'?'mu':'mb');
+  wrap.className='msg '+tc;
+  const lbl=document.createElement('div');lbl.className='mlabel';
+  const labels={fact:'daily fact',news:'news digest',reward:'reward +xp',sys:'nexusbot',err:'error'};
+  lbl.textContent=labels[tc]||(role==='user'?'you':'nexusbot');
+  const b=document.createElement('div');b.className='bubble';b.textContent=text;
+  wrap.appendChild(lbl);wrap.appendChild(b);msgs.appendChild(wrap);msgs.scrollTop=msgs.scrollHeight;return b;
+}
+
+function addTyping(){const w=document.createElement('div');w.className='msg mb';w.id='typing';const d=document.createElement('div');d.className='typedots';d.innerHTML='<span></span><span></span><span></span>';w.appendChild(d);msgs.appendChild(w);msgs.scrollTop=msgs.scrollHeight;}
+function rmTyping(){const t=document.getElementById('typing');if(t)t.remove();}
+function setLive(s){const dot=document.getElementById('liveDot'),lbl=document.getElementById('liveLbl');if(s==='thinking'){dot.style.background='#fbbf24';lbl.textContent='thinking...';}else if(s==='error'){dot.style.background='#f87171';lbl.textContent='error';}else{dot.style.background='#34d399';lbl.textContent='online';}}
+
+async function callBackend(userMsg,sysPatch){
+  setLive('thinking');
+  const messages=[{role:'system',content:getSystem()+(sysPatch?'\n'+sysPatch:'')}, ...history, {role:'user',content:userMsg}];
+  try{
+    const res=await fetch(API_ENDPOINT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages,model})});
+    const data=await res.json();
+    if(!res.ok)throw new Error(data.error||'Server error');
+    setLive('online');return data.reply;
+  }catch(err){setLive('error');addMsg('bot','Error: '+err.message,'err');return null;}
+}
+
+async function send(){
+  const text=inp.value.trim();if(!text||busy)return;
+  inp.value='';rsz(inp);busy=true;sbtn.disabled=true;
+  addMsg('user',text);
+  const isLive=LIVE_KEYWORDS.some(k=>text.toLowerCase().includes(k));
+  if(isLive){
+    const m={hindi:'🏏 लाइव स्कोर के लिए यहाँ जाएं:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nमैं अपनी जानकारी से भी उत्तर देने की कोशिश करूंगा:',marathi:'🏏 लाइव स्कोरसाठी येथे जा:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nमी माझ्या ज्ञानातून उत्तर देण्याचा प्रयत्न करेन:',bengali:'🏏 লাইভ স্কোরের জন্য এখানে যান:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nআমি আমার জ্ঞান থেকে উত্তর দেওয়ার চেষ্টা করব:',tamil:'🏏 நேரடி ஸ்கோருக்கு இங்கே செல்லுங்கள்:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nஎனது அறிவிலிருந்து பதிலளிக்க முயற்சிப்பேன்:',telugu:'🏏 లైవ్ స్కోర్ కోసం ఇక్కడికి వెళ్ళండి:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nనా జ్ఞానం నుండి సమాధానం ఇవ్వడానికి ప్రయత్నిస్తాను:',kannada:'🏏 ಲೈವ್ ಸ್ಕೋರ್‌ಗಾಗಿ ಇಲ್ಲಿಗೆ ಹೋಗಿ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nನನ್ನ ಜ್ಞಾನದಿಂದ ಉತ್ತರಿಸಲು ಪ್ರಯತ್ನಿಸುತ್ತೇನೆ:',malayalam:'🏏 തത്സമയ സ്കോറിനായി ഇവിടെ പോകൂ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nഎന്റെ അറിവിൽ നിന്ന് ഉത്തരം നൽകാൻ ശ്രമിക്കും:',gujarati:'🏏 લાઇવ સ્કોર માટે અહીં જાઓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nહું મારા જ્ઞાનથી જવાબ આપવાનો પ્રયત્ન કરીશ:',punjabi:'🏏 ਲਾਈਵ ਸਕੋਰ ਲਈ ਇੱਥੇ ਜਾਓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nਮੈਂ ਆਪਣੇ ਗਿਆਨ ਤੋਂ ਜਵਾਬ ਦੇਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰਾਂਗਾ:',urdu:'🏏 لائیو اسکور کے لیے یہاں جائیں:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nمیں اپنے علم سے جواب دینے کی کوشش کروں گا:',spanish:'🏏 Para puntuaciones en vivo visita:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nTambién intentaré responder:',french:'🏏 Pour les scores en direct:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nJ\'essaierai de répondre:',arabic:'🏏 للنتائج المباشرة:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nسأحاول الإجابة:',chinese:'🏏 实时比分请访问:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\n我也会尝试回答:',japanese:'🏏 リアルタイムスコア:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\n知識からお答えします:'};
+    addMsg('bot',m[selectedLanguage]||'🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "live score"\n\nI will also try to answer from my knowledge:','sys');
   }
+  if(history.length>6)history=history.slice(-6);
+  history.push({role:'user',content:text});
+  addTyping();const reply=await callBackend(text);rmTyping();
+  if(reply){
+    addMsg('bot',reply);history.push({role:'assistant',content:reply});msgCount++;
+    const isBad=BAD_WORDS.some(w=>text.toLowerCase().includes(w));
+    if(isBad){gainXP(0);addMsg('bot','Please keep our conversation respectful. No XP earned for this message.','err');}
+    else{gainXP(10);}
+    if(msgCount>0&&msgCount%5===0){streak++;updateStats();addMsg('bot','Streak x'+streak+'! +7 bonus XP for staying consistent!','reward');gainXP(7);}
+  }
+  busy=false;sbtn.disabled=false;
 }
 
-function renderLangDropdown(langs) {
-  const dd = document.getElementById('langDropdown');
-  dd.innerHTML = langs.map(l => `
-    <div
-      onclick="selectLang('${l.code}','${l.native}')"
-      style="padding:7px 12px;cursor:pointer;font-size:12px;font-family:var(--fm);color:var(--text);display:flex;justify-content:space-between;align-items:center;border-bottom:0.5px solid var(--border)"
-      onmouseover="this.style.background='var(--surface)'"
-      onmouseout="this.style.background='transparent'"
-    >
-      <span>${l.native}</span>
-      <span style="color:var(--hint);font-size:10px">${l.name}</span>
-    </div>
-  `).join('');
+async function doFact(){
+  if(busy)return;busy=true;document.getElementById('btnFact').disabled=true;
+  addMsg('user','Give me today\'s daily fact');addTyping();
+  const r=await callBackend('Share one truly fascinating little-known fact. One punchy sentence first, then 2-3 sentences of context.','Be enthusiastic and educational.');
+  rmTyping();if(r){addMsg('bot',r,'fact');gainXP(5);}
+  busy=false;document.getElementById('btnFact').disabled=false;
 }
 
-function filterLangs(query) {
+async function doNews(){
+  if(busy)return;busy=true;document.getElementById('btnNews').disabled=true;
+  addMsg('user','Give me a news digest');addTyping();
+  const r=await callBackend('Give a news digest with 4 sections:\n1) AI & Technology\n2) Science & Space\n3) World Affairs\n4) Business & Economy\nFor each write 2-3 sentences.','Be concise and factual.');
+  rmTyping();if(r){addMsg('bot',r,'news');gainXP(5);}
+  busy=false;document.getElementById('btnNews').disabled=false;
+}
+
+async function doQuick(q){if(busy)return;inp.value=q;await send();}
+
+function gainXP(n){xp+=n;const need=level*100;if(xp>=need){xp-=need;level++;levelUp();}updateStats();}
+
+function levelUp(){
+  const t=document.createElement('div');t.className='lvtoast';t.textContent='⚡ LEVEL '+level+' UNLOCKED!';
+  document.body.appendChild(t);setTimeout(()=>t.remove(),2900);
+  addMsg('bot','Level '+level+' reached! '+(level>=5?'Agent Mode active!':((5-level)+' levels to Agent Mode.'))+'\n+25 bonus XP!','reward');
+  gainXP(25);
+}
+
+function updateStats(){
+  const need=level*100;
+  document.getElementById('xplb').textContent=xp+' XP';
+  document.getElementById('lvlb').textContent='Lv.'+level;
+  document.getElementById('stlb').textContent=streak+' streak';
+  document.getElementById('lvnum').textContent=level;
+  document.getElementById('xpval').textContent=xp+' / '+need;
+  document.getElementById('xpfill').style.width=Math.min(100,(xp/need)*100)+'%';
+}
+
+function showLangDropdown(){
+  renderLangDrop(LANGUAGES);
+  document.getElementById('langDrop').style.display='block';
+  setTimeout(()=>document.addEventListener('click',closeLangDrop),10);
+}
+function closeLangDrop(e){
+  const drop=document.getElementById('langDrop'),search=document.getElementById('langSearch');
+  if(!drop.contains(e.target)&&e.target!==search){drop.style.display='none';document.removeEventListener('click',closeLangDrop);}
+}
+function renderLangDrop(langs){
+  document.getElementById('langDrop').innerHTML=langs.map(l=>'<div class="langitem" onclick="selectLang(\''+l.code+'\',\''+l.native+'\')"><span>'+l.native+'</span><span>'+l.name+'</span></div>').join('');
+}
+function filterLangs(q){
   showLangDropdown();
-  if (!query) { renderLangDropdown(LANGUAGES); return; }
-  const filtered = LANGUAGES.filter(l =>
-    l.name.toLowerCase().includes(query.toLowerCase()) ||
-    l.native.includes(query)
-  );
-  renderLangDropdown(filtered.length ? filtered : [{name:'Not found', native:'❌ No results', code:'auto'}]);
+  if(!q){renderLangDrop(LANGUAGES);return;}
+  const f=LANGUAGES.filter(l=>l.name.toLowerCase().includes(q.toLowerCase())||l.native.includes(q));
+  renderLangDrop(f.length?f:[{name:'Not found',native:'❌ No results',code:'auto'}]);
 }
-
-function selectLang(code, native) {
-  selectedLanguage = code;
-  document.getElementById('selectedLang').textContent = native;
-  document.getElementById('langSearch').value = '';
-  document.getElementById('langDropdown').style.display = 'none';
-  if (code !== 'auto') {
-    addMsg('bot', `Language set to ${native}! I will now reply in this language 🎉`, 'sys');
-  } else {
-    addMsg('bot', 'Auto detect enabled! I will match your language automatically 🌍', 'sys');
-  }
+function selectLang(code,native){
+  selectedLanguage=code;
+  document.getElementById('langSel').textContent=native;
+  document.getElementById('langSearch').value='';
+  document.getElementById('langDrop').style.display='none';
+  addMsg('bot',code!=='auto'?'Language set to '+native+'! I will now reply in this language 🎉':'Auto detect enabled! I will match your language automatically 🌍','sys');
 }
-
-function resetLang() {
-  selectedLanguage = 'auto';
-  document.getElementById('selectedLang').textContent = 'Auto';
-  document.getElementById('langSearch').value = '';
-} inp = document.getElementById('inp'), sbtn = document.getElementById('sbtn');
-  window.addEventListener('load', () => { addMsg('bot', 'NexusBot online! Powered by Groq free API.\n\nI can answer questions, share daily facts, news digests, help with tasks and research.\n\nEarn XP every message — reach Level 5 for Agent Mode!\n\nWhat would you like to explore?', 'sys');gainXP(3); streak = 1; updateStats();
-  function addMsg(role, text, type) {
-    const wrap = document.createElement('div');
-    const tc = type || (role === 'user' ? 'mu' : 'mb');
-    wrap.className = 'msg ' + tc;
-    const lbl = document.createElement('div'); lbl.className = 'mlabel';
-    const labels = { fact:'daily fact', news:'news digest', reward:'reward +xp', sys:'nexusbot', err:'error' };
-    lbl.textContent = labels[tc] || (role === 'user' ? 'you' : 'nexusbot');
-    const b = document.createElement('div'); b.className = 'bubble'; b.innerHTML = text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/### (.*?)(\n|$)/g,'<br><strong>$1</strong><br>').replace(/\n/g,'<br>');
-    wrap.appendChild(lbl); wrap.appendChild(b); msgs.appendChild(wrap); msgs.scrollTop = msgs.scrollHeight; return b;
-  }
-  function addTyping() { const w = document.createElement('div'); w.className = 'msg mb'; w.id = 'typing'; const d = document.createElement('div'); d.className = 'typedots'; d.innerHTML = '<span></span><span></span><span></span>'; w.appendChild(d); msgs.appendChild(w); msgs.scrollTop = msgs.scrollHeight; }
-  function rmTyping() { const t = document.getElementById('typing'); if (t) t.remove(); }
-  function setLive(s) { const dot = document.getElementById('liveDot'), lbl = document.getElementById('liveLbl'); if (s==='thinking'){dot.style.background='#fbbf24';lbl.textContent='thinking...';} else if(s==='error'){dot.style.background='#f87171';lbl.textContent='error';} else{dot.style.background='#34d399';lbl.textContent='online';} }
-  async function callBackend(userMsg, sysPatch='') {
-    setLive('thinking');
-    const messages = [{role:'system',content:getSystem()+(sysPatch?'\n'+sysPatch:'')}, ...history, {role:'user',content:userMsg}];
-    try {
-      const res = await fetch(API_ENDPOINT, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({messages, model})});
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Server error');
-      setLive('online'); return data.reply;
-    } catch(err) { setLive('error'); addMsg('bot', 'Error: ' + err.message, 'err'); return null; }
-  }
-  async function send() {
-    const text = inp.value.trim(); if (!text || busy) return;
-    inp.value = ''; rsz(inp); busy = true; sbtn.disabled = true;
-    addMsg('user', text);
-const liveKeywords = [
-  // English
-  'score', 'live', 'result', 'match', 'ipl', 'cricket', 'wicket', 'run', 'pbks', 'mi', 'csk', 'rcb', 'kkr', 'srh', 'dc', 'rr', 'lsg', 'gt', 'football', 'fifa', 'goal',
-  // Hindi हिंदी
-  'स्कोर', 'मैच', 'क्रिकेट', 'आईपीएल', 'रन', 'विकेट', 'रिजल्ट', 'लाइव', 'खेल',
-  // Bengali বাংলা
-  'স্কোর', 'ম্যাচ', 'ক্রিকেট', 'রান', 'উইকেট', 'ফলাফল', 'লাইভ',
-  // Tamil தமிழ்
-  'ஸ்கோர்', 'மேட்ச்', 'கிரிக்கெட்', 'ரன்', 'விக்கெட்', 'முடிவு',
-  // Telugu తెలుగు
-  'స్కోర్', 'మ్యాచ్', 'క్రికెట్', 'రన్', 'వికెట్', 'ఫలితం',
-  // Marathi मराठी
-  'स्कोअर', 'सामना', 'क्रिकेट', 'धाव', 'बाद', 'निकाल',
-  // Gujarati ગુજરાતી
-  'સ્કોર', 'મેચ', 'ક્રિકેટ', 'રન', 'વિકેટ', 'પરિણામ',
-  // Kannada ಕನ್ನಡ
-  'ಸ್ಕೋರ್', 'ಮ್ಯಾಚ್', 'ಕ್ರಿಕೆಟ್', 'ರನ್', 'ವಿಕೆಟ್', 'ಫಲಿತಾಂಶ',
-  // Malayalam മലയാളം
-  'സ്കോർ', 'മാച്ച്', 'ക്രിക്കറ്റ്', 'റൺ', 'വിക്കറ്റ്', 'ഫലം',
-  // Punjabi ਪੰਜਾਬੀ
-  'ਸਕੋਰ', 'ਮੈਚ', 'ਕ੍ਰਿਕੇਟ', 'ਰਨ', 'ਵਿਕਟ', 'ਨਤੀਜਾ',
-  // Odia ଓଡ଼ିଆ
-  'ସ୍କୋର', 'ମ୍ୟାଚ', 'କ୍ରିକେଟ', 'ରନ', 'ୱିକେଟ', 'ଫଳାଫଳ',
-  // Assamese অসমীয়া
-  'স্কোৰ', 'মেচ', 'ক্ৰিকেট', 'ৰান', 'উইকেট', 'ফলাফল',
-  // Urdu اردو
-  'اسکور', 'میچ', 'کرکٹ', 'رن', 'وکٹ', 'نتیجہ',
-  // Maithili मैथिली
-  'स्कोर', 'मैच', 'क्रिकेट', 'रन', 'विकेट', 'नतीजा',
-  // Sanskrit संस्कृत
-  'स्कोर', 'क्रीडा', 'परिणाम',
-  // Sindhi सिंधी
-  'اسڪور', 'ميچ', 'ڪرڪيٽ', 'رن', 'وڪيٽ',
-  // Kashmiri कश्मीरी
-  'سکور', 'میچ', 'کرکٹ', 'رن', 'وکٹ',
-  // Nepali नेपाली
-  'स्कोर', 'खेल', 'क्रिकेट', 'रन', 'विकेट', 'नतिजा',
-  // Konkani कोंकणी
-  'स्कोर', 'मॅच', 'क्रिकेट', 'रन', 'विकेट',
-  // Dogri डोगरी
-  'स्कोर', 'मैच', 'क्रिकेट', 'रन', 'विकेट',
-  // Bodo बोडो
-  'स्कोर', 'मैच', 'क्रिकेट', 'रन',
-  // Santhali संथाली
-  'স্কোর', 'ম্যাচ', 'ক্রিকেট', 'রান',
-  // Manipuri মণিপুরী
-  'স্কোর', 'মেচ', 'ক্রিকেট', 'রান',
-  // Spanish
-  'marcador', 'partido', 'gol', 'resultado', 'fútbol', 'tenis', 'baloncesto',
-  // French
-  'score', 'match', 'but', 'résultat', 'football', 'tennis',
-  // Arabic
-  'نتيجة', 'مباراة', 'كرة', 'هدف', 'كريكيت',
-  // Chinese 中文
-  '比分', '比赛', '板球', '足球', '结果', '进球',
-  // Japanese 日本語
-  'スコア', '試合', 'クリケット', 'サッカー', '結果', 'ゴール',
-];
-if (liveKeywords.some(k => text.toLowerCase().includes(k))) {
-  const liveMsg = selectedLanguage === 'hindi'
-  ? '🏏 लाइव स्कोर के लिए यहाँ जाएं:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google पर सर्च करें: "MI vs PBKS live score"\n\nमैं अपनी जानकारी से भी उत्तर देने की कोशिश करूंगा:'
-  : selectedLanguage === 'marathi'
-  ? '🏏 लाइव स्कोरसाठी येथे जा:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nमी माझ्या ज्ञानातून उत्तर देण्याचा प्रयत्न करेन:'
-  : selectedLanguage === 'bengali'
-  ? '🏏 লাইভ স্কোরের জন্য এখানে যান:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nআমি আমার জ্ঞান থেকে উত্তর দেওয়ার চেষ্টা করব:'
-  : selectedLanguage === 'tamil'
-  ? '🏏 நேரடி ஸ்கோருக்கு இங்கே செல்லுங்கள்:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nஎனது அறிவிலிருந்து பதிலளிக்க முயற்சிப்பேன்:'
-  : selectedLanguage === 'telugu'
-  ? '🏏 లైవ్ స్కోర్ కోసం ఇక్కడికి వెళ్ళండి:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nనా జ్ఞానం నుండి సమాధానం ఇవ్వడానికి ప్రయత్నిస్తాను:'
-  : selectedLanguage === 'kannada'
-  ? '🏏 ಲೈವ್ ಸ್ಕೋರ್‌ಗಾಗಿ ಇಲ್ಲಿಗೆ ಹೋಗಿ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nನನ್ನ ಜ್ಞಾನದಿಂದ ಉತ್ತರಿಸಲು ಪ್ರಯತ್ನಿಸುತ್ತೇನೆ:'
-  : selectedLanguage === 'malayalam'
-  ? '🏏 തത്സമയ സ്കോറിനായി ഇവിടെ പോകൂ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nഎന്റെ അറിവിൽ നിന്ന് ഉത്തരം നൽകാൻ ശ്രമിക്കും:'
-  : selectedLanguage === 'gujarati'
-  ? '🏏 લાઇવ સ્કોર માટે અહીં જાઓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nહું મારા જ્ઞાનથી જવાબ આપવાનો પ્રયત્ન કરીશ:'
-  : selectedLanguage === 'punjabi'
-  ? '🏏 ਲਾਈਵ ਸਕੋਰ ਲਈ ਇੱਥੇ ਜਾਓ:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n\nਮੈਂ ਆਪਣੇ ਗਿਆਨ ਤੋਂ ਜਵਾਬ ਦੇਣ ਦੀ ਕੋਸ਼ਿਸ਼ ਕਰਾਂਗਾ:'
-  : '🏏 For real-time live scores visit:\n• Cricbuzz: cricbuzz.com\n• ESPNCricinfo: espncricinfo.com\n• Google: search "MI vs PBKS live score"\n\nI will also try to answer from my knowledge:';
-addMsg('bot', liveMsg, 'sys');
-}
-if (history.length > 10) history = history.slice(-10);
-history.push({role:'user', content:text});
-    addTyping(); const reply = await callBackend(text); rmTyping();
-    if (reply) {
-  addMsg('bot', reply); history.push({role:'assistant', content:reply}); msgCount++;
-  const badWords = ['stupid', 'idiot', 'fool', 'shut up', 'hate', 'ugly', 'dumb', 'useless', 'shut', 'bc', 'mc', 'bsdk', 'chutiya', 'madarchod','bhenchod','gandu','harami','sala','saala','randi','gaandu'];
-const isBad = badWords.some(word => text.toLowerCase().includes(word));
-if (isBad) {
-  gainXP(0);
-  addMsg('bot', 'Please keep our conversation respectful. No XP earned for this message.', 'err');
-} else {
-  gainXP(10);
-}
-     if (msgCount % 5 === 0) { streak++; updateStats(); addMsg('bot', `Streak ×${streak}! +7 bonus XP for staying consistent. Keep going!`, 'reward'); gainXP(7); }
-    }
-    busy = false; sbtn.disabled = false;
-  }
-  async function doFact() {
-    if (busy) return; busy = true; document.getElementById('btnFact').disabled = true;
-    addMsg('user', 'Give me today\'s daily fact'); addTyping();
-    const r = await callBackend('Share one truly fascinating little-known fact. One punchy sentence first, then 2-3 sentences of context.', 'Be enthusiastic and educational.');
-    rmTyping(); if (r) { addMsg('bot', r, 'fact'); gainXP(5); }
-    busy = false; document.getElementById('btnFact').disabled = false;
-  }
-  async function doNews() {
-    if (busy) return; busy = true; document.getElementById('btnNews').disabled = true;
-    addMsg('user', 'Give me a news digest'); addTyping();
-    const r = await callBackend('Give a news digest with 4 sections:\n1) AI & Technology\n2) Science & Space\n3) World Affairs\n4) Business & Economy\nFor each write 2-3 sentences on key trends.', 'Be concise and factual like a news anchor.');
-    rmTyping(); if (r) { addMsg('bot', r, 'news'); gainXP(5);  }
-    busy = false; document.getElementById('btnNews').disabled = false;
-  }
-  async function doQuick(q) { if (busy) return; inp.value = q; await send(); }
-  function gainXP(n) { xp += n; const need = level*100; if (xp >= need) { xp -= need; level++; levelUp(); } updateStats(); }
-  function levelUp() {
-    const t = document.createElement('div'); t.className = 'lvtoast'; t.textContent = '⚡ LEVEL ' + level + ' UNLOCKED!';
-    document.body.appendChild(t); setTimeout(() => t.remove(), 2900);
-    addMsg('bot', `Level ${level} reached! ${level>=5?'Agent Mode active!':((5-level)+' levels to Agent Mode.')}\n+20 bonus XP!`, 'reward'); gainXP(25);
-  }
-  function updateStats() { const need=level*100; document.getElementById('xplb').textContent=xp+' XP'; document.getElementById('lvlb').textContent='Lv.'+level; document.getElementById('stlb').textContent=streak+' streak'; document.getElementById('lvnum').textContent=level; document.getElementById('xpval').textContent=xp+' / '+need; document.getElementById('xpfill').style.width=Math.min(100,(xp/need)*100)+'%'; }
-  function onKey(e) { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); send(); } }
-  function rsz(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,100)+'px'; }
-  updateStats();
+function resetLang(){selectedLanguage='auto';document.getElementById('langSel').textContent='Auto';document.getElementById('langSearch').value='';}
+function onKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();send();}}
+function rsz(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,100)+'px';}
+updateStats();
 </script>
 </body>
 </html>
