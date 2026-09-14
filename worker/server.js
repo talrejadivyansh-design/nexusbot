@@ -1,7 +1,7 @@
 import express from "express";
 import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
-import { buildCoachMessages, extractJson, VISION_MODEL_CANDIDATES } from "./coach.js";
+import { buildCoachMessages, extractJson, TEXT_MODEL_CANDIDATES } from "./coach.js";
 
 const PORT = process.env.PORT || 10000;
 const WORKER_SECRET = process.env.WORKER_SECRET;
@@ -98,7 +98,6 @@ async function runJob(job) {
     sessionLabel: job.label,
     metrics: { perVideo: analysis.perVideoMetrics, aggregated: analysis.aggregated },
     benchmarks: analysis.benchmarks,
-    keyFrames: analysis.keyFrames,
     priorSessionsSummary,
   });
   const report = await callGroq(messages);
@@ -150,7 +149,7 @@ async function callGroq(messages) {
   if (!key) throw new Error("No Groq API key configured on the worker");
 
   let data, lastError;
-  for (const model of VISION_MODEL_CANDIDATES) {
+  for (const model of TEXT_MODEL_CANDIDATES) {
     const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },

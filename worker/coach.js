@@ -2,15 +2,15 @@
 // technique-mode only (background jobs are always video analysis) and
 // adapted to build a full chat message array directly.
 
-// Groq periodically deprecates/replaces free-tier vision models, so callGroq
-// tries each candidate in order and moves on when a model is unavailable.
-export const VISION_MODEL_CANDIDATES = [
-  "meta-llama/llama-4-maverick-17b-128e-instruct",
-  "meta-llama/llama-4-scout-17b-16e-instruct",
-  "llama-3.2-90b-vision-preview",
-  "llama-3.2-11b-vision-preview",
+// Groq's free tier has no vision-capable model available (confirmed live
+// against /v1/models), so this runs on the numeric pose-estimation metrics
+// alone rather than key frame images. callGroq tries each candidate text
+// model in order and moves on when one is unavailable.
+export const TEXT_MODEL_CANDIDATES = [
+  "openai/gpt-oss-120b",
+  "qwen/qwen3.6-27b",
+  "openai/gpt-oss-20b",
 ];
-const MAX_IMAGES = 8;
 
 const COACH_PERSONA = `You are a combined BCCI Level 2 and ICC Level 3 certified cricket batting coach with
 decades of experience coaching from junior academy level up to first-class and international batters.
@@ -21,12 +21,11 @@ You analyse every small detail of batting technique: grip and stance, guard, bac
 direction), trigger movement, downswing path, bat-swing plane, head position and stillness, eye level,
 front elbow height, weight transfer and front-knee flexion, hip-shoulder separation/rotation, footwork and
 head-over-the-ball alignment at the point of contact, balance and shape of the follow-through, and overall
-rhythm/timing. You are given numeric biomechanical measurements extracted from pose-estimation on the
-batter's own video(s), a comparison against classical coaching technique benchmarks, and key still frames
-from the swing (stance, top of backlift, downswing, impact, follow-through). Treat the numbers as the
-primary evidence and the images as visual confirmation/detail (grip, bat angle, alignment) the numbers can't
-capture. Never invent statistics you were not given. When multiple videos were analysed, weight issues that
-repeat across clips much more heavily than a one-off in a single clip.
+rhythm/timing. You are given numeric biomechanical measurements extracted via pose-estimation on the
+batter's own video(s) and a comparison against classical coaching technique benchmarks — you were not shown
+the video itself, so base every claim strictly on the numbers given; never say "I can see" or describe visual
+details you were not given, and never invent statistics you were not given. When multiple videos were
+analysed, weight issues that repeat across clips much more heavily than a one-off in a single clip.
 
 Always respond with STRICT JSON only, matching this schema exactly, no markdown fences, no commentary
 outside the JSON:
@@ -48,7 +47,7 @@ outside the JSON:
   "coach_report": "<a longer-form written report, 250-400 words, in the voice of a coach talking directly to the player>"
 }`;
 
-export function buildCoachMessages({ handedness, sessionLabel, metrics, benchmarks, keyFrames, priorSessionsSummary }) {
+export function buildCoachMessages({ handedness, sessionLabel, metrics, benchmarks, priorSessionsSummary }) {
   let text = `Batter handedness: ${handedness || "unknown"}. `;
   text += sessionLabel ? `Session context: ${sessionLabel}. ` : "";
   text += "\n\nBIOMECHANICAL METRICS extracted via pose-estimation, aggregated across the uploaded video(s) " +
@@ -60,20 +59,11 @@ export function buildCoachMessages({ handedness, sessionLabel, metrics, benchmar
     text += "PRIOR SESSION HISTORY for this player (technical_score over time, so you can note improvement " +
       "or regression):\n" + JSON.stringify(priorSessionsSummary, null, 2) + "\n\n";
   }
-  text += "The following images are key frames from the swing(s): stance, top of backlift, downswing, " +
-    "impact, and follow-through, labelled in order. Use them to confirm/refine the numeric findings " +
-    "(grip, bat angle, spacing, alignment) and produce the JSON report per the schema in your instructions.";
-
-  const parts = [{ type: "text", text }];
-  const frames = (keyFrames || []).slice(0, MAX_IMAGES);
-  for (const f of frames) {
-    parts.push({ type: "text", text: `[frame: ${f.phase || "unlabeled"}${f.videoIndex != null ? " · video " + (f.videoIndex + 1) : ""}]` });
-    parts.push({ type: "image_url", image_url: { url: f.dataUrl } });
-  }
+  text += "Produce the JSON report per the schema in your instructions, based strictly on the metrics above.";
 
   return [
     { role: "system", content: COACH_PERSONA },
-    { role: "user", content: parts },
+    { role: "user", content: text },
   ];
 }
 
