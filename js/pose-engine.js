@@ -6,7 +6,13 @@
 import { PoseLandmarker, FilesetResolver } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/vision_bundle.mjs";
 
 const CDN_BASE = "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@1.0.1/wasm";
-const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/1/pose_landmarker_heavy.task";
+const MODEL_URL = "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task";
+
+// MediaPipe's VIDEO running mode requires timestamps that strictly increase
+// for the lifetime of a detector instance — since the detector is a shared
+// singleton reused across every video in a batch, this counter must never
+// reset between videos, or detectForVideo throws a packet-timestamp error.
+let globalTimestamp = 1;
 
 const L = {
   NOSE: 0,
@@ -88,15 +94,14 @@ export async function analyzeVideoFile(file, handedness, onProgress) {
   });
 
   const duration = video.duration;
-  const targetSamples = Math.min(150, Math.max(30, Math.round(duration * 30)));
+  const targetSamples = Math.min(90, Math.max(24, Math.round(duration * 20)));
   const dt = duration / targetSamples;
 
   const series = [];
-  let ts = 1;
   for (let i = 0; i <= targetSamples; i++) {
     const t = Math.min(duration - 0.001, i * dt);
     await seekTo(video, t);
-    const result = landmarker.detectForVideo(video, ts++);
+    const result = landmarker.detectForVideo(video, globalTimestamp++);
     const lm = result.landmarks && result.landmarks[0];
     const wlm = result.worldLandmarks && result.worldLandmarks[0];
     if (lm && wlm) series.push({ t, img: lm, world: wlm });

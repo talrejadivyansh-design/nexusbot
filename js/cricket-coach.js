@@ -91,6 +91,7 @@ function renderFileList() {
     wrap.appendChild(row);
   });
   $("analyzeBtn").disabled = selectedFiles.length === 0;
+  $("fileCountWarning").hidden = selectedFiles.length <= 5;
 }
 
 function escapeHtml(s) {
