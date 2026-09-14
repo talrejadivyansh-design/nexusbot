@@ -20,7 +20,7 @@ let jobsCache = [];
 async function refreshAuthUI() {
   const { data } = await supabase.auth.getUser();
   currentUser = data?.user || null;
-  $("authStatus").textContent = currentUser ? currentUser.email : "Not signed in";
+  $("authStatus").textContent = currentUser ? (currentUser.is_anonymous ? "Signed in (quick start — this device only)" : currentUser.email) : "Not signed in";
   $("authForm").hidden = !!currentUser;
   $("signOutBtn").hidden = !currentUser;
   $("cloudNotice").hidden = !!currentUser;
@@ -50,6 +50,13 @@ $("signInBtn").addEventListener("click", async () => {
   const email = $("authEmail").value.trim();
   const password = $("authPassword").value;
   const { error } = await supabase.auth.signInWithPassword({ email, password });
+  setAuthMsg(error ? error.message : "");
+  await refreshAuthUI();
+});
+
+$("quickStartBtn").addEventListener("click", async () => {
+  setAuthMsg("Starting...");
+  const { error } = await supabase.auth.signInAnonymously();
   setAuthMsg(error ? error.message : "");
   await refreshAuthUI();
 });

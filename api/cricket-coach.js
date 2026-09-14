@@ -1,7 +1,15 @@
 // Cricket batting coach — turns computed biomechanics metrics + key video frames
 // into a structured coaching report using a vision-capable Groq model.
 
-const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Groq periodically deprecates/replaces free-tier vision models, so this
+// tries each candidate in order and moves on when a model is unavailable,
+// rather than hard-failing on one specific model ID going away.
+const VISION_MODEL_CANDIDATES = [
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "llama-3.2-90b-vision-preview",
+  "llama-3.2-11b-vision-preview",
+];
 const MAX_IMAGES = 8;
 
 function getKey() {
@@ -160,29 +168,30 @@ export default async function handler(req, res) {
 
   const system = mode === "career" ? CAREER_PERSONA : COACH_PERSONA;
   const userContent = buildUserContent(payload);
+  const messages = [
+    { role: "system", content: system },
+    { role: "user", content: userContent },
+  ];
 
   try {
-    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: "Bearer " + key,
-      },
-      body: JSON.stringify({
-        model: VISION_MODEL,
-        messages: [
-          { role: "system", content: system },
-          { role: "user", content: userContent },
-        ],
-        max_tokens: 2200,
-        temperature: 0.4,
-        response_format: { type: "json_object" },
-      }),
-    });
-
-    const data = await r.json();
-    if (!r.ok) {
-      return res.status(502).json({ error: data.error?.message || "Coach model request failed" });
+    let data, lastError;
+    for (const model of VISION_MODEL_CANDIDATES) {
+      const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + key,
+        },
+        body: JSON.stringify({ model, messages, max_tokens: 2200, temperature: 0.4, response_format: { type: "json_object" } }),
+      });
+      const body = await r.json();
+      if (r.ok) { data = body; break; }
+      lastError = body.error?.message || "Coach model request failed";
+      const modelUnavailable = /does not exist|decommissioned|not found|no longer|not supported/i.test(lastError);
+      if (!modelUnavailable) break;
+    }
+    if (!data) {
+      return res.status(502).json({ error: lastError || "All coach models unavailable" });
     }
     const raw = data.choices?.[0]?.message?.content || "";
     const report = extractJson(raw);

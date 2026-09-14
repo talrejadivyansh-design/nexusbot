@@ -2,7 +2,14 @@
 // technique-mode only (background jobs are always video analysis) and
 // adapted to build a full chat message array directly.
 
-export const VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+// Groq periodically deprecates/replaces free-tier vision models, so callGroq
+// tries each candidate in order and moves on when a model is unavailable.
+export const VISION_MODEL_CANDIDATES = [
+  "meta-llama/llama-4-maverick-17b-128e-instruct",
+  "meta-llama/llama-4-scout-17b-16e-instruct",
+  "llama-3.2-90b-vision-preview",
+  "llama-3.2-11b-vision-preview",
+];
 const MAX_IMAGES = 8;
 
 const COACH_PERSONA = `You are a combined BCCI Level 2 and ICC Level 3 certified cricket batting coach with
