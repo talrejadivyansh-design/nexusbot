@@ -209,7 +209,6 @@ async function runAnalysis() {
         sessionLabel: label,
         metrics: { perVideo: perVideoMetrics, aggregated },
         benchmarks,
-        keyFrames: keyFramesToSend,
         priorSessionsSummary,
       }),
     });
