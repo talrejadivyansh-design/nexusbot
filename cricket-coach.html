@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Cricket Batting Coach — NexusBot</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0d0f14; --surface: #151821; --surface2: #1c2030;
+  --border: #2a2f42; --text: #e8eaf0; --muted: #7a8099; --hint: #454d6a;
+  --accent: #6c8fff; --accent-bg: #1a2340; --green: #34d399; --green-bg: #0d2820;
+  --amber: #fbbf24; --amber-bg: #271e08; --red: #f87171; --red-bg: #2a0f0f;
+  --fm: 'JetBrains Mono', monospace; --fu: 'Syne', sans-serif;
+  --radius: 14px; --radius-sm: 8px;
+}
+html, body { min-height: 100%; }
+body { font-family: var(--fu); background: var(--bg); color: var(--text); padding: 20px 16px 60px; }
+a { color: var(--accent); }
+#app { max-width: 920px; margin: 0 auto; }
+header.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 18px; flex-wrap: wrap; }
+.brand { display: flex; align-items: center; gap: 10px; }
+.brand-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--accent-bg); border: 1px solid var(--accent); display: flex; align-items: center; justify-content: center; font-size: 18px; }
+.brand-title { font-size: 19px; font-weight: 700; }
+.brand-title small { display: block; font-size: 11px; font-weight: 400; color: var(--muted); font-family: var(--fm); }
+.backlink { font-family: var(--fm); font-size: 12px; color: var(--muted); text-decoration: none; border: 1px solid var(--border); padding: 6px 12px; border-radius: 99px; }
+.backlink:hover { color: var(--text); border-color: var(--hint); }
+
+.authbox { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.authbox .label { font-family: var(--fm); font-size: 11px; color: var(--hint); }
+#authStatus { font-family: var(--fm); font-size: 12px; color: var(--accent); }
+#authForm { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+#authForm input { font-family: var(--fm); font-size: 12px; padding: 6px 10px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none; }
+#authMsg { font-family: var(--fm); font-size: 11px; color: var(--amber); width: 100%; }
+button { font-family: var(--fu); cursor: pointer; }
+.btn { font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: var(--radius-sm); border: 1px solid var(--accent); background: var(--accent-bg); color: var(--accent); transition: all .15s; }
+.btn:hover { background: var(--accent); color: var(--bg); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+.btnghost { font-size: 11px; padding: 5px 12px; border-radius: 99px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); }
+.btnghost:hover { color: var(--text); border-color: var(--hint); }
+#cloudNotice { font-family: var(--fm); font-size: 11px; color: var(--hint); }
+
+.tabs { display: flex; gap: 6px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+.tabbtn { background: none; border: none; color: var(--muted); font-size: 13px; font-weight: 600; padding: 9px 14px; border-bottom: 2px solid transparent; }
+.tabbtn.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tabpanel { }
+
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px; margin-bottom: 16px; }
+.card h2 { font-size: 15px; margin-bottom: 10px; }
+.card h3 { font-size: 13px; margin: 14px 0 8px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 13px; }
+
+.formrow { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; align-items: center; }
+select, input[type=text], input[type=date], input[type=number], textarea {
+  font-family: var(--fu); font-size: 13px; padding: 8px 11px; border-radius: var(--radius-sm);
+  border: 1px solid var(--border); background: var(--bg); color: var(--text); outline: none;
+}
+select:focus, input:focus, textarea:focus { border-color: var(--hint); }
+label.inline { font-family: var(--fm); font-size: 11px; color: var(--hint); display: flex; flex-direction: column; gap: 4px; }
+
+.dropzone { border: 1.5px dashed var(--border); border-radius: var(--radius-sm); padding: 22px; text-align: center; color: var(--muted); font-size: 13px; cursor: pointer; }
+.dropzone:hover { border-color: var(--accent); color: var(--text); }
+#fileList { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; }
+.filerow { display: flex; justify-content: space-between; align-items: center; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 10px; font-size: 12px; font-family: var(--fm); }
+.filerow button { background: none; border: none; color: var(--red); font-size: 13px; }
+
+#progressWrap { margin-top: 14px; }
+.progresstrack { height: 6px; background: var(--surface2); border-radius: 99px; overflow: hidden; border: 1px solid var(--border); }
+#progressBar { height: 100%; width: 0%; background: var(--accent); transition: width .2s; }
+#progressLog { font-family: var(--fm); font-size: 11px; color: var(--muted); white-space: pre-wrap; margin-top: 8px; max-height: 140px; overflow-y: auto; }
+
+#reportWrap .scorehead { display: flex; align-items: center; gap: 16px; margin-bottom: 10px; }
+#scoreNum { font-size: 44px; font-weight: 700; font-family: var(--fm); }
+#scoreNum::after { content: '/100'; font-size: 16px; color: var(--muted); margin-left: 4px; }
+#reportSummary { font-size: 14px; line-height: 1.6; }
+.priobox { background: var(--amber-bg); border: 1px solid var(--amber); color: var(--amber); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13px; margin: 10px 0; }
+#strengthsList { padding-left: 18px; font-size: 13px; line-height: 1.7; }
+.wcard { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 8px; font-size: 13px; line-height: 1.6; }
+.wissue { font-weight: 700; color: var(--red); margin-bottom: 4px; }
+.phaseRow { display: flex; gap: 10px; padding: 6px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.phaseName { width: 110px; flex-shrink: 0; text-transform: capitalize; color: var(--accent); font-family: var(--fm); font-size: 11px; }
+#coachReportText { font-size: 13.5px; line-height: 1.7; white-space: pre-wrap; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; }
+
+table.benchtable, table.scoretable { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 6px; }
+table.benchtable th, table.benchtable td, table.scoretable th, table.scoretable td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+table.benchtable tr.ok td:last-child { color: var(--green); }
+table.benchtable tr.flag td:last-child { color: var(--red); }
+table.scoretable { font-family: var(--fm); }
+.delscore { background: none; border: none; color: var(--red); }
+
+.histcard { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+.histtop { display: flex; gap: 10px; align-items: baseline; font-family: var(--fm); font-size: 12px; margin-bottom: 4px; }
+.histscore { font-size: 16px; font-weight: 700; }
+.histdate { color: var(--muted); }
+.histlabel { color: var(--accent); }
+.histsummary { font-size: 13px; margin-bottom: 6px; }
+.histweak { font-size: 12px; color: var(--muted); margin: 6px 0; }
+.histreport { font-size: 12px; white-space: pre-wrap; color: var(--muted); }
+details summary { cursor: pointer; font-size: 12px; color: var(--accent); }
+
+.statgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(90px,1fr)); gap: 10px; margin: 10px 0; }
+.stat { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+.statnum { font-family: var(--fm); font-size: 20px; font-weight: 700; color: var(--accent); }
+.statlbl { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+.score { font-family: var(--fm); font-size: 32px; font-weight: 700; }
+.scoreOf { font-size: 14px; color: var(--muted); }
+#careerInsightOut p { font-size: 13px; line-height: 1.6; margin: 8px 0; }
+.coachtext { white-space: pre-wrap; background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px; }
+
+ul#benchmarkRef { padding-left: 18px; font-size: 12px; color: var(--muted); line-height: 1.8; }
+footer.note { font-size: 11px; color: var(--hint); text-align: center; margin-top: 20px; font-family: var(--fm); }
+@media (max-width: 560px) { .phaseName { width: 80px; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="top">
+    <div class="brand">
+      <div class="brand-icon">🏏</div>
+      <div class="brand-title">Cricket Batting Coach<small>BCCI L2 · ICC L3-style analysis, powered by pose AI</small></div>
+    </div>
+    <a class="backlink" href="./index.html">← NexusBot</a>
+  </header>
+
+  <div class="authbox">
+    <span class="label">Account:</span>
+    <span id="authStatus">Not signed in</span>
+    <div id="authForm">
+      <input type="text" id="authEmail" placeholder="email" autocomplete="email" />
+      <input type="text" id="authPassword" placeholder="password" autocomplete="current-password" />
+      <button class="btn" id="signInBtn" type="button">Sign in</button>
+      <button class="btnghost" id="signUpBtn" type="button">Create account</button>
+    </div>
+    <button class="btnghost" id="signOutBtn" type="button" hidden>Sign out</button>
+    <span id="cloudNotice">Sign in to save reports &amp; track progress over years — analysis works without an account too.</span>
+    <div id="authMsg"></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tabbtn active" data-tab="tabAnalyze">Analyze</button>
+    <button class="tabbtn" data-tab="tabHistory">History &amp; Trends</button>
+    <button class="tabbtn" data-tab="tabCareer">Career Scores</button>
+    <button class="tabbtn" data-tab="tabAbout">How this works</button>
+  </div>
+
+  <section id="tabAnalyze" class="tabpanel">
+    <div class="card">
+      <h2>Upload your batting videos</h2>
+      <p class="muted">Add one or more clips of the same or related sessions — more videos of you batting give a more reliable read on which flaws are consistent vs. one-off. Film side-on where possible, full body in frame, decent light.</p>
+      <div class="formrow" style="margin-top:12px">
+        <label class="inline">Handedness
+          <select id="handedness"><option value="right">Right-handed</option><option value="left">Left-handed</option></select>
+        </label>
+        <label class="inline">Session note (optional)
+          <input type="text" id="sessionLabel" placeholder="e.g. nets — off-side work" />
+        </label>
+      </div>
+      <div class="dropzone" id="dropzone">Click to choose video files (mp4/mov) — you can select multiple</div>
+      <input type="file" id="videoInput" accept="video/*" multiple hidden />
+      <div id="fileList"></div>
+      <div style="margin-top:14px">
+        <button class="btn" id="analyzeBtn" disabled type="button">Analyze technique</button>
+      </div>
+      <div id="progressWrap" hidden>
+        <div class="progresstrack"><div id="progressBar"></div></div>
+        <div id="progressLog"></div>
+      </div>
+    </div>
+
+    <div class="card" id="reportWrap" hidden>
+      <div class="scorehead">
+        <div id="scoreNum">–</div>
+        <div id="reportSummary"></div>
+      </div>
+      <div class="priobox"><b>Priority focus:</b> <span id="priorityFocus"></span></div>
+      <h3>Strengths</h3>
+      <ul id="strengthsList"></ul>
+      <h3>Weaknesses &amp; how to fix them</h3>
+      <div id="weaknessesList"></div>
+      <h3>Phase-by-phase breakdown</h3>
+      <div id="phaseBreakdown"></div>
+      <h3>Measured vs. classical technique benchmarks</h3>
+      <table class="benchtable"><thead><tr><th>Metric</th><th>Your value</th><th>Target range</th><th>Status</th></tr></thead><tbody id="benchmarkTable"></tbody></table>
+      <h3>Full coach report</h3>
+      <div id="coachReportText"></div>
+      <div style="margin-top:14px">
+        <button class="btn" id="saveSessionBtn" hidden type="button">Save to history</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="tabHistory" class="tabpanel" hidden>
+    <div class="card">
+      <h2>Technical score over time</h2>
+      <div id="trendChart"></div>
+    </div>
+    <div class="card">
+      <h2>Saved sessions</h2>
+      <div id="historyList"></div>
+    </div>
+  </section>
+
+  <section id="tabCareer" class="tabpanel" hidden>
+    <div class="card">
+      <h2>Add a match / innings score</h2>
+      <p class="muted">Log scores from across your career (however many years you have) — the more you add, the better the trend and comparison.</p>
+      <div class="formrow">
+        <label class="inline">Date<input type="date" id="scoreDate" /></label>
+        <label class="inline">Format
+          <select id="scoreFormat"><option>Practice</option><option>Club</option><option>School/College</option><option>T20</option><option>ODI/List A</option><option>Test/First-class</option><option>Other</option></select>
+        </label>
+        <label class="inline">Opposition<input type="text" id="scoreOpp" placeholder="optional" /></label>
+      </div>
+      <div class="formrow">
+        <label class="inline">Runs<input type="number" id="scoreRuns" min="0" /></label>
+        <label class="inline">Balls faced<input type="number" id="scoreBalls" min="0" /></label>
+        <label class="inline">4s<input type="number" id="score4s" min="0" /></label>
+        <label class="inline">6s<input type="number" id="score6s" min="0" /></label>
+        <label class="inline">Dismissal<input type="text" id="scoreDismissal" placeholder="e.g. caught behind / not out" /></label>
+      </div>
+      <div class="formrow"><label class="inline" style="flex:1"><input type="text" id="scoreNotes" placeholder="notes (optional)" /></label></div>
+      <button class="btn" id="addScoreBtn" type="button">Add score</button>
+    </div>
+
+    <div class="card">
+      <h2>Career summary</h2>
+      <div id="careerStats"></div>
+      <h3>Average runs per year</h3>
+      <div id="careerChart"></div>
+    </div>
+
+    <div class="card">
+      <h2>Score history</h2>
+      <div id="careerTable"></div>
+    </div>
+
+    <div class="card">
+      <h2>Career review &amp; comparison to professional benchmarks</h2>
+      <button class="btn" id="careerInsightBtn" type="button">Get career insight</button>
+      <div id="careerInsightOut" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <section id="tabAbout" class="tabpanel" hidden>
+    <div class="card">
+      <h2>How the analysis works</h2>
+      <p class="muted" style="line-height:1.7">
+        Your videos never leave your browser as raw video — pose estimation runs fully client-side (MediaPipe)
+        to track 33 body landmarks per sampled frame. From that, the tool detects the five batting phases
+        (stance, backlift, downswing, impact, follow-through) from your hand-speed profile, and computes
+        biomechanical metrics: head stability, weight transfer, backlift straightness, front elbow height,
+        hip-shoulder rotation, and balance. Only a handful of still key-frame images plus the numeric metrics
+        are sent to the coaching model for interpretation — modelled as a combined BCCI Level 2 / ICC Level 3
+        coach persona. Because this uses a single camera and no bat/ball tracking, treat angle numbers as
+        strong estimates, not lab-grade measurement — the qualitative coaching (what to work on, and how) is
+        the main value.
+      </p>
+      <h3>Benchmark ranges used</h3>
+      <ul id="benchmarkRef"></ul>
+    </div>
+  </section>
+
+  <footer class="note">Not a substitute for in-person coaching — use this to focus your practice between sessions with a real coach.</footer>
+</div>
+
+<script>
+document.getElementById('dropzone').addEventListener('click', () => document.getElementById('videoInput').click());
+</script>
+<script type="module" src="./js/cricket-coach.js"></script>
+</body>
+</html>
