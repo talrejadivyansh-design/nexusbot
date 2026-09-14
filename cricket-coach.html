@@ -90,6 +90,10 @@ table.scoretable { font-family: var(--fm); }
 .delscore { background: none; border: none; color: var(--red); }
 
 .histcard { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 10px 12px; margin-bottom: 10px; }
+.jobstatus { font-weight: 700; padding: 2px 8px; border-radius: 99px; font-size: 11px; }
+.jobstatus-queued { background: var(--amber-bg); color: var(--amber); }
+.jobstatus-processing { background: var(--accent-bg); color: var(--accent); }
+.jobstatus-failed { background: var(--red-bg); color: var(--red); }
 .histtop { display: flex; gap: 10px; align-items: baseline; font-family: var(--fm); font-size: 12px; margin-bottom: 4px; }
 .histscore { font-size: 16px; font-weight: 700; }
 .histdate { color: var(--muted); }
@@ -161,9 +165,12 @@ footer.note { font-size: 11px; color: var(--hint); text-align: center; margin-to
       <input type="file" id="videoInput" accept="video/*" multiple hidden />
       <div id="fileList"></div>
       <p id="fileCountWarning" class="muted" hidden style="color:var(--amber)">That's a lot of clips at once — each one is processed fully in your browser, so more clips means a much longer wait (and a higher chance of running into issues on a phone). 3–5 focused clips usually give a great read; consider removing a few.</p>
-      <div style="margin-top:14px">
+      <div style="margin-top:14px;display:flex;gap:10px;flex-wrap:wrap;align-items:center">
         <button class="btn" id="analyzeBtn" disabled type="button">Analyze technique</button>
+        <button class="btnghost" id="queueBtn" disabled type="button">Queue for background analysis</button>
       </div>
+      <p class="muted" style="margin-top:8px">"Analyze technique" runs right here in this tab and needs the page to stay open. "Queue for background analysis" uploads your videos and a background worker processes them over the next few minutes — close this page and check the History tab later. Requires sign-in.</p>
+      <p id="queueStatus" class="muted" hidden style="color:var(--accent)"></p>
       <div id="progressWrap" hidden>
         <div class="progresstrack"><div id="progressBar"></div></div>
         <div id="progressLog"></div>
@@ -196,6 +203,10 @@ footer.note { font-size: 11px; color: var(--hint); text-align: center; margin-to
     <div class="card">
       <h2>Technical score over time</h2>
       <div id="trendChart"></div>
+    </div>
+    <div class="card">
+      <h2>Background jobs</h2>
+      <div id="jobsList" hidden></div>
     </div>
     <div class="card">
       <h2>Saved sessions</h2>

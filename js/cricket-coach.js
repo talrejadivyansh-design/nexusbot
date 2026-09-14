@@ -13,6 +13,7 @@ let selectedFiles = [];
 let lastSessionPayload = null; // {metrics, benchmarks, keyFrames}
 let sessionsCache = [];
 let careerCache = [];
+let jobsCache = [];
 
 // ---------- Auth ----------
 
@@ -26,9 +27,11 @@ async function refreshAuthUI() {
   if (currentUser) {
     await loadSessions();
     await loadCareerScores();
+    await loadJobs();
   } else {
     sessionsCache = [];
     careerCache = [];
+    jobsCache = [];
     renderHistory();
     renderCareer();
   }
@@ -91,11 +94,57 @@ function renderFileList() {
     wrap.appendChild(row);
   });
   $("analyzeBtn").disabled = selectedFiles.length === 0;
+  $("queueBtn").disabled = selectedFiles.length === 0;
   $("fileCountWarning").hidden = selectedFiles.length <= 5;
 }
 
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+// ---------- Background analysis (upload + queue a job, worker processes it later) ----------
+
+$("queueBtn").addEventListener("click", queueBackgroundJob);
+
+async function queueBackgroundJob() {
+  if (!currentUser) return alert("Sign in first — background jobs need an account so the result can be found later.");
+  if (!selectedFiles.length) return;
+  const handedness = $("handedness").value;
+  const label = $("sessionLabel").value.trim();
+  $("queueBtn").disabled = true;
+  $("queueStatus").hidden = false;
+  $("queueStatus").textContent = "Uploading videos...";
+
+  try {
+    const jobFolder = crypto.randomUUID();
+    const paths = [];
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const f = selectedFiles[i];
+      const path = `${currentUser.id}/${jobFolder}/${i}_${f.name}`;
+      const { error } = await supabase.storage.from("batting-videos").upload(path, f, { contentType: f.type || "video/mp4" });
+      if (error) throw new Error(`Could not upload ${f.name}: ${error.message}`);
+      paths.push(path);
+      $("queueStatus").textContent = `Uploaded ${i + 1}/${selectedFiles.length}...`;
+    }
+
+    const { error: insertErr } = await supabase.from("analysis_jobs").insert({
+      user_id: currentUser.id,
+      status: "queued",
+      handedness,
+      label: label || null,
+      video_paths: paths,
+    });
+    if (insertErr) throw new Error(insertErr.message);
+
+    $("queueStatus").textContent = "Queued! The background worker checks for new jobs every couple of minutes — you can close this page. Check the History tab later for your report.";
+    selectedFiles = [];
+    renderFileList();
+    await loadJobs();
+  } catch (err) {
+    $("queueStatus").textContent = "Error: " + err.message;
+  } finally {
+    $("queueBtn").disabled = selectedFiles.length === 0;
+  }
 }
 
 // ---------- Analysis pipeline ----------
@@ -251,6 +300,37 @@ $("saveSessionBtn").addEventListener("click", async () => {
   setTimeout(() => { $("saveSessionBtn").textContent = "Save to history"; }, 2000);
   await loadSessions();
 });
+
+// ---------- Background jobs ----------
+
+async function loadJobs() {
+  if (!currentUser) return;
+  const { data, error } = await supabase
+    .from("analysis_jobs")
+    .select("*")
+    .neq("status", "done")
+    .order("created_at", { ascending: false })
+    .limit(20);
+  if (!error) jobsCache = data || [];
+  renderJobs();
+}
+
+const JOB_STATUS_LABEL = { queued: "Queued", processing: "Processing", failed: "Failed" };
+function renderJobs() {
+  const wrap = $("jobsList");
+  if (!wrap) return;
+  if (!jobsCache.length) { wrap.innerHTML = ""; wrap.hidden = true; return; }
+  wrap.hidden = false;
+  wrap.innerHTML = jobsCache.map((j) => `
+    <div class="histcard jobcard jobcard-${j.status}">
+      <div class="histtop">
+        <span class="jobstatus jobstatus-${j.status}">${JOB_STATUS_LABEL[j.status] || j.status}</span>
+        <span class="histdate">${new Date(j.created_at).toLocaleString()}</span>
+        ${j.label ? `<span class="histlabel">${escapeHtml(j.label)}</span>` : ""}
+      </div>
+      ${j.status === "failed" ? `<div class="histweak">Error: ${escapeHtml(j.error || "unknown error")}</div>` : `<div class="muted">${j.video_paths.length} video(s) — the background worker checks every couple of minutes.</div>`}
+    </div>`).join("");
+}
 
 // ---------- History ----------
 

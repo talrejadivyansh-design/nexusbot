@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8" /><title>worker harness</title></head>
+<body>
+<script type="module">
+import { analyzeVideoFile, aggregateMetrics, compareToBenchmarks } from "./pose-engine.js";
+
+async function runSession(urls, handedness) {
+  const perVideoMetrics = [];
+  const allKeyFrames = [];
+  for (let i = 0; i < urls.length; i++) {
+    const resp = await fetch(urls[i]);
+    const blob = await resp.blob();
+    const file = new File([blob], `video_${i}.mp4`, { type: blob.type || "video/mp4" });
+    const result = await analyzeVideoFile(file, handedness, () => {});
+    perVideoMetrics.push(result.metrics);
+    result.keyFrames.forEach((kf) => allKeyFrames.push({ ...kf, videoIndex: i }));
+  }
+
+  const aggregated = aggregateMetrics(perVideoMetrics);
+  const meanOnly = Object.fromEntries(Object.entries(aggregated).map(([k, v]) => [k, v?.mean ?? null]));
+  const benchmarks = compareToBenchmarks(meanOnly);
+
+  const priority = { impact: 0, backlift_top: 1, follow_through: 2, downswing: 3, stance: 4 };
+  const keyFrames = allKeyFrames
+    .slice()
+    .sort((a, b) => (priority[a.phase] - priority[b.phase]) || (a.videoIndex - b.videoIndex))
+    .slice(0, 8);
+
+  return { perVideoMetrics, aggregated, benchmarks, keyFrames };
+}
+
+window.__runSession = runSession;
+window.__ready = true;
+</script>
+</body>
+</html>
