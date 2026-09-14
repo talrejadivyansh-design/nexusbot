@@ -160,6 +160,7 @@ footer.note { font-size: 11px; color: var(--hint); text-align: center; margin-to
       <div class="dropzone" id="dropzone">Click to choose video files (mp4/mov) — you can select multiple</div>
       <input type="file" id="videoInput" accept="video/*" multiple hidden />
       <div id="fileList"></div>
+      <p id="fileCountWarning" class="muted" hidden style="color:var(--amber)">That's a lot of clips at once — each one is processed fully in your browser, so more clips means a much longer wait (and a higher chance of running into issues on a phone). 3–5 focused clips usually give a great read; consider removing a few.</p>
       <div style="margin-top:14px">
         <button class="btn" id="analyzeBtn" disabled type="button">Analyze technique</button>
       </div>
