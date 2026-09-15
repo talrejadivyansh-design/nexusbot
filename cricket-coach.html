@@ -260,13 +260,15 @@ footer.note { font-size: 11px; color: var(--hint); text-align: center; margin-to
     <div class="card">
       <h2>How the analysis works</h2>
       <p class="muted" style="line-height:1.7">
-        Your videos never leave your browser as raw video — pose estimation runs fully client-side (MediaPipe)
-        to track 33 body landmarks per sampled frame. From that, the tool detects the five batting phases
-        (stance, backlift, downswing, impact, follow-through) from your hand-speed profile, and computes
-        biomechanical metrics: head stability, weight transfer, backlift straightness, front elbow height,
-        hip-shoulder rotation, and balance. Only a handful of still key-frame images plus the numeric metrics
-        are sent to the coaching model for interpretation — modelled as a combined BCCI Level 2 / ICC Level 3
-        coach persona. Because this uses a single camera and no bat/ball tracking, treat angle numbers as
+        Your videos never leave your browser or device — pose estimation runs fully client-side/on the
+        background worker (MediaPipe) to track 33 body landmarks per sampled frame, no video is ever uploaded
+        to any AI model. From that, the tool detects the five batting phases (stance, backlift, downswing,
+        impact, follow-through) from your hand-speed profile, and computes biomechanical metrics: head
+        stability, weight transfer, backlift straightness, front elbow height, hip-shoulder rotation, and
+        balance. The coaching report — strengths, weaknesses, drills, phase breakdown — is generated entirely
+        by rule-based logic comparing your numbers against classical coaching benchmarks; there's no AI model
+        in this step at all, so it's free, instant, and can't break because a third-party model gets
+        discontinued. Because this uses a single camera and no bat/ball tracking, treat angle numbers as
         strong estimates, not lab-grade measurement — the qualitative coaching (what to work on, and how) is
         the main value.
       </p>
