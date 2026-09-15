@@ -88,6 +88,9 @@ const METRIC_COACHING = {
 
 const PHASES = ["stance", "backlift", "downswing", "impact", "follow_through"];
 
+// A couple of technical nitpicks shouldn't tank the score — reserve low
+// scores for genuinely multiple, severe misses (mirrors the guidance given
+// to the AI coach, so both paths score consistently).
 function scoreFromBenchmarks(benchmarks) {
   let score = 100;
   for (const b of Object.values(benchmarks)) {
@@ -95,9 +98,9 @@ function scoreFromBenchmarks(benchmarks) {
     const range = b.max - b.min || 1;
     const miss = b.value < b.min ? b.min - b.value : b.value - b.max;
     const severity = clamp(miss / range, 0, 1.5);
-    score -= 6 + severity * 10;
+    score -= 4 + severity * 6;
   }
-  return Math.round(clamp(score, 25, 97));
+  return Math.round(clamp(score, 40, 97));
 }
 
 function pickDirection(entry) {
