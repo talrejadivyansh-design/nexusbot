@@ -1,11 +1,11 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0/+esm";
 import { analyzeVideoFile, BENCHMARKS, compareToBenchmarks, aggregateMetrics } from "./pose-engine.js";
+import { generateTechniqueReport, generateCareerReport } from "./coach-rules.js";
 
 const SUPABASE_URL = "https://xbuapfvanmtxwdaoacvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhidWFwZnZhbm10eHdkYW9hY3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTg2MDQsImV4cCI6MjEwNDk3NDYwNH0.O8kxjrCqZoKBZXRZl5boJgXV_f0rXejqsTratJI5Yx0";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-const API_ENDPOINT = "/api/cricket-coach";
 const $ = (id) => document.getElementById(id);
 
 let currentUser = null;
@@ -169,7 +169,6 @@ async function runAnalysis() {
   log.textContent = "";
 
   const perVideoMetrics = [];
-  const allKeyFrames = [];
 
   try {
     for (let i = 0; i < selectedFiles.length; i++) {
@@ -179,7 +178,6 @@ async function runAnalysis() {
         setProgress(((i + frac) / selectedFiles.length) * 100);
       });
       perVideoMetrics.push(result.metrics);
-      result.keyFrames.forEach((kf) => allKeyFrames.push({ ...kf, videoIndex: i }));
       logLine(log, `Video ${i + 1}: done (${result.sampleCount} frames sampled).`);
     }
 
@@ -188,42 +186,26 @@ async function runAnalysis() {
     const meanOnly = Object.fromEntries(Object.entries(aggregated).map(([k, v]) => [k, v?.mean ?? null]));
     const benchmarks = compareToBenchmarks(meanOnly);
 
-    // Cap frames sent to the model: prefer impact + backlift_top across videos, then others.
-    const priority = { impact: 0, backlift_top: 1, follow_through: 2, downswing: 3, stance: 4 };
-    const keyFramesToSend = allKeyFrames
-      .slice()
-      .sort((a, b) => (priority[a.phase] - priority[b.phase]) || (a.videoIndex - b.videoIndex))
-      .slice(0, 8);
-
-    logLine(log, "Sending to your coach for review (this can take a little while)...");
+    logLine(log, "Building your coach report from the measurements...");
     const priorSessionsSummary = sessionsCache.slice(0, 5).map((s) => ({
       date: s.created_at, technical_score: s.technical_score, top_weakness: s.weaknesses?.[0]?.issue || null,
     }));
 
-    const res = await fetch(API_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "technique",
-        handedness,
-        sessionLabel: label,
-        metrics: { perVideo: perVideoMetrics, aggregated },
-        benchmarks,
-        priorSessionsSummary,
-      }),
+    const report = generateTechniqueReport({
+      benchmarks,
+      videoCount: selectedFiles.length,
+      priorSessionsSummary,
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Coach request failed");
 
     lastSessionPayload = {
       metrics: { perVideo: perVideoMetrics, aggregated },
       benchmarks,
-      report: data.report,
+      report,
       video_count: selectedFiles.length,
       label,
     };
 
-    renderReport(data.report, benchmarks);
+    renderReport(report, benchmarks);
     $("saveSessionBtn").hidden = !currentUser;
     logLine(log, "Done.");
   } catch (err) {
@@ -506,19 +488,12 @@ $("careerInsightBtn").addEventListener("click", async () => {
       entries: careerCache.map((c) => ({ date: c.match_date, format: c.format, runs: c.runs, balls: c.balls_faced, fours: c.fours, sixes: c.sixes, dismissal: c.dismissal })),
     };
     const latestSession = sessionsCache[0];
-    const res = await fetch(API_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        mode: "career",
-        careerStats,
-        metrics: latestSession ? latestSession.phase_metrics : undefined,
-        priorSessionsSummary: sessionsCache.slice(0, 8).map((s) => ({ date: s.created_at, technical_score: s.technical_score })),
-      }),
+    const report = generateCareerReport({
+      careerStats,
+      benchmarks: latestSession ? latestSession.benchmark_comparison : undefined,
+      priorSessionsSummary: sessionsCache.slice(0, 8).map((s) => ({ date: s.created_at, technical_score: s.technical_score })),
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || "Request failed");
-    renderCareerInsight(data.report);
+    renderCareerInsight(report);
   } catch (err) {
     $("careerInsightOut").textContent = "Error: " + err.message;
   } finally {

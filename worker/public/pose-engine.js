@@ -293,6 +293,8 @@ export function compareToBenchmarks(metrics) {
     if (v === null || v === undefined) continue;
     out[key] = {
       value: v,
+      min: range.min,
+      max: range.max,
       target: `${range.min} - ${range.max}`,
       note: range.note,
       withinBenchmark: v >= range.min && v <= range.max,
