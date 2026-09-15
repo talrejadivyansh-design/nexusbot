@@ -2,6 +2,7 @@ import express from "express";
 import { chromium } from "playwright";
 import { createClient } from "@supabase/supabase-js";
 import { generateTechniqueReport } from "./coach-rules.js";
+import { buildCoachMessages, extractJson, TEXT_MODEL_CANDIDATES } from "./coach.js";
 
 const PORT = process.env.PORT || 10000;
 const WORKER_SECRET = process.env.WORKER_SECRET;
@@ -93,7 +94,10 @@ async function runJob(job) {
     date: s.created_at, technical_score: s.technical_score, top_weakness: s.weaknesses?.[0]?.issue || null,
   }));
 
-  const report = generateTechniqueReport({
+  const report = await getTechniqueReport({
+    handedness: job.handedness,
+    sessionLabel: job.label,
+    metrics: { perVideo: analysis.perVideoMetrics, aggregated: analysis.aggregated },
     benchmarks: analysis.benchmarks,
     videoCount: job.video_paths.length,
     priorSessionsSummary,
@@ -135,6 +139,44 @@ async function runPoseAnalysis(urls, handedness) {
   } finally {
     await browser.close();
   }
+}
+
+async function getTechniqueReport({ handedness, sessionLabel, metrics, benchmarks, videoCount, priorSessionsSummary }) {
+  try {
+    const messages = buildCoachMessages({ handedness, sessionLabel, metrics, benchmarks, priorSessionsSummary });
+    return await callGroq(messages);
+  } catch (err) {
+    console.error("AI coach unavailable, falling back to rule-based report:", err.message || err);
+    return generateTechniqueReport({ benchmarks, videoCount, priorSessionsSummary });
+  }
+}
+
+async function callGroq(messages) {
+  const keys = [
+    process.env.GROQ_API_KEY, process.env.GROQ_API_KEY_1, process.env.GROQ_API_KEY_2,
+    process.env.GROQ_API_KEY_3, process.env.GROQ_API_KEY_4,
+  ].filter(Boolean);
+  const key = keys[Math.floor(Math.random() * keys.length)];
+  if (!key) throw new Error("No Groq API key configured on the worker");
+
+  let data, lastError;
+  for (const model of TEXT_MODEL_CANDIDATES) {
+    const r = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: "Bearer " + key },
+      body: JSON.stringify({ model, messages, max_tokens: 2200, temperature: 0.4, response_format: { type: "json_object" } }),
+    });
+    const body = await r.json();
+    if (r.ok) { data = body; break; }
+    lastError = body.error?.message || "Coach model request failed";
+    const modelUnavailable = /does not exist|decommissioned|not found|no longer|not supported/i.test(lastError);
+    if (!modelUnavailable) break;
+  }
+  if (!data) throw new Error(lastError || "All coach models unavailable");
+  const raw = data.choices?.[0]?.message?.content || "";
+  const report = extractJson(raw);
+  if (!report) throw new Error("Could not parse coach report");
+  return report;
 }
 
 function withTimeout(promise, ms, message) {

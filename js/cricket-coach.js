@@ -6,7 +6,41 @@ const SUPABASE_URL = "https://xbuapfvanmtxwdaoacvr.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhidWFwZnZhbm10eHdkYW9hY3ZyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzOTg2MDQsImV4cCI6MjEwNDk3NDYwNH0.O8kxjrCqZoKBZXRZl5boJgXV_f0rXejqsTratJI5Yx0";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+const API_ENDPOINT = "/api/cricket-coach";
 const $ = (id) => document.getElementById(id);
+
+// Tries the AI coach first (richer, more natural writing); if it fails for
+// any reason (model unavailable, network, rate limit), falls back to the
+// local rule-based engine automatically so there's always a result.
+async function getTechniqueReport({ handedness, sessionLabel, metrics, benchmarks, priorSessionsSummary }) {
+  try {
+    const res = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "technique", handedness, sessionLabel, metrics, benchmarks, priorSessionsSummary }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.report) throw new Error(data.error || "AI coach failed");
+    return { report: data.report, source: "ai" };
+  } catch {
+    return { report: generateTechniqueReport({ benchmarks, videoCount: metrics?.perVideo?.length || 1, priorSessionsSummary }), source: "rules" };
+  }
+}
+
+async function getCareerReport({ careerStats, metrics, benchmarks, priorSessionsSummary }) {
+  try {
+    const res = await fetch(API_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mode: "career", careerStats, metrics, priorSessionsSummary }),
+    });
+    const data = await res.json();
+    if (!res.ok || !data.report) throw new Error(data.error || "AI coach failed");
+    return { report: data.report, source: "ai" };
+  } catch {
+    return { report: generateCareerReport({ careerStats, benchmarks, priorSessionsSummary }), source: "rules" };
+  }
+}
 
 let currentUser = null;
 let selectedFiles = [];
@@ -186,16 +220,18 @@ async function runAnalysis() {
     const meanOnly = Object.fromEntries(Object.entries(aggregated).map(([k, v]) => [k, v?.mean ?? null]));
     const benchmarks = compareToBenchmarks(meanOnly);
 
-    logLine(log, "Building your coach report from the measurements...");
+    logLine(log, "Sending to your AI coach for review...");
     const priorSessionsSummary = sessionsCache.slice(0, 5).map((s) => ({
       date: s.created_at, technical_score: s.technical_score, top_weakness: s.weaknesses?.[0]?.issue || null,
     }));
 
-    const report = generateTechniqueReport({
+    const { report, source } = await getTechniqueReport({
+      handedness, sessionLabel: label,
+      metrics: { perVideo: perVideoMetrics, aggregated },
       benchmarks,
-      videoCount: selectedFiles.length,
       priorSessionsSummary,
     });
+    if (source === "rules") logLine(log, "AI coach unavailable right now — showing the built-in rule-based analysis instead.");
 
     lastSessionPayload = {
       metrics: { perVideo: perVideoMetrics, aggregated },
@@ -488,8 +524,9 @@ $("careerInsightBtn").addEventListener("click", async () => {
       entries: careerCache.map((c) => ({ date: c.match_date, format: c.format, runs: c.runs, balls: c.balls_faced, fours: c.fours, sixes: c.sixes, dismissal: c.dismissal })),
     };
     const latestSession = sessionsCache[0];
-    const report = generateCareerReport({
+    const { report } = await getCareerReport({
       careerStats,
+      metrics: latestSession ? latestSession.phase_metrics : undefined,
       benchmarks: latestSession ? latestSession.benchmark_comparison : undefined,
       priorSessionsSummary: sessionsCache.slice(0, 8).map((s) => ({ date: s.created_at, technical_score: s.technical_score })),
     });
